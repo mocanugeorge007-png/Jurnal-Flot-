@@ -1,0 +1,31 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.cursacucursa.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.cursacucursa.app"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // toate fișierele aplicației (index.html, manifest, iconițe) stau în assets/
+    // și sunt afișate direct într-un WebView — nu avem nevoie de alte librării.
+}

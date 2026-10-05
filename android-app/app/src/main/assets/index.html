@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cursă cu Cursă</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#192433; --paper:#eef3fa; --line:#d8e3f0;
+  --steel:#52697e; --steel-dim:#8ba1b8;
+  --amber:#2f6fed; --amber-bg:#e2ecfd;
+  --good:#1f9d61; --good-bg:#e2f7ec;
+  --bad:#e0493f; --bad-bg:#fce7e5;
+  --card:#ffffff;
+  --shadow:0 2px 6px rgba(37,78,165,0.08), 0 10px 26px rgba(37,78,165,0.10);
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e6edf7; --paper:#0f1823; --line:#223348;
+    --steel:#a2b7cc; --steel-dim:#56708c;
+    --amber:#5b9bff; --amber-bg:#163258;
+    --good:#52d18c; --good-bg:#123a28;
+    --bad:#f17d74; --bad-bg:#3a1f1d;
+    --card:#152030;
+    --shadow:0 2px 8px rgba(0,0,0,0.35), 0 12px 28px rgba(0,0,0,0.32);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e6edf7; --paper:#0f1823; --line:#223348;
+  --steel:#a2b7cc; --steel-dim:#56708c;
+  --amber:#5b9bff; --amber-bg:#163258;
+  --good:#52d18c; --good-bg:#123a28;
+  --bad:#f17d74; --bad-bg:#3a1f1d;
+  --card:#152030;
+  --shadow:0 2px 8px rgba(0,0,0,0.35), 0 12px 28px rgba(0,0,0,0.32);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  min-height:100%;
+}
+html,body{height:100%;}
+h1,h2,h3{font-weight:600; margin:0 0 4px;}
+.mono{font-family:"IBM Plex Mono",monospace;}
+button{font-family:inherit;}
+input,select{font-family:inherit; font-size:16px;}
+
+header.top{
+  position:sticky; top:0; top:env(safe-area-inset-top,0px);
+  background:linear-gradient(180deg, var(--amber-bg) 0%, var(--paper) 100%);
+  border-bottom:1px solid var(--line);
+  padding:14px 16px 11px; z-index:10;
+}
+header.top .brand{display:flex; align-items:baseline; justify-content:space-between;}
+header.top h1{font-size:18px; letter-spacing:-0.01em; font-weight:700;}
+header.top .sub{font-size:12.5px; color:var(--steel-dim); margin-top:2px; font-family:"IBM Plex Mono",monospace;}
+
+main{padding:16px 16px 90px; max-width:640px; margin:0 auto;}
+.hide{display:none !important;}
+
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:16px; margin-bottom:14px; box-shadow:var(--shadow);
+}
+.card h3{font-size:13px; text-transform:none; color:var(--steel); font-weight:600; margin-bottom:10px;}
+
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.field{margin-bottom:10px;}
+.field label{display:block; font-size:12.5px; color:var(--steel); margin-bottom:4px;}
+.field input, .field select{
+  width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:9px;
+  background:var(--paper); color:var(--ink);
+}
+.field input:focus, .field select:focus{outline:2px solid var(--amber); outline-offset:-1px;}
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:11px 16px; border-radius:11px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink); font-size:14.5px; font-weight:600;
+  cursor:pointer; width:100%; transition:transform .08s ease, box-shadow .08s ease;
+}
+.btn:active{transform:scale(0.98);}
+.btn.primary{
+  background:linear-gradient(135deg, #4a86ff 0%, var(--amber) 100%); color:#fff; border-color:transparent;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.25), 0 6px 16px rgba(47,111,237,0.32);
+}
+.btn.ghost{background:transparent;}
+.btn.small{width:auto; padding:7px 12px; font-size:13px;}
+.btn.danger{color:var(--bad);}
+
+#tripList{
+  background:var(--card); border:1px solid var(--line); border-radius:16px;
+  padding:2px 16px; box-shadow:var(--shadow);
+}
+#tripList:empty{display:none; padding:0; border:none; box-shadow:none;}
+.trip{
+  border:none; border-bottom:1px solid var(--line); border-radius:0; padding:13px 0; margin-bottom:0;
+  display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
+  background:transparent; box-shadow:none;
+}
+.trip:last-child{border-bottom:none;}
+.trip .route{font-size:14px; font-weight:600;}
+.trip .meta{font-size:12px; color:var(--steel-dim); margin-top:2px;}
+.trip .empty-tag{display:inline-block; font-size:10.5px; background:var(--amber-bg); color:var(--amber); padding:2px 7px; border-radius:6px; margin-left:6px; font-weight:600;}
+.trip .num{text-align:right; white-space:nowrap;}
+.trip .num .big{font-size:15px; font-weight:600; font-family:"IBM Plex Mono",monospace;}
+.trip .num.pos .big{color:var(--good);}
+.trip .num.neg .big{color:var(--bad);}
+.trip .num .lbl{font-size:10.5px; color:var(--steel-dim);}
+.del, .edit, .view{background:none; border:none; color:var(--steel-dim); font-size:15px; cursor:pointer; padding:2px 5px; line-height:1;}
+.del:hover{color:var(--bad);}
+.edit:hover{color:var(--amber);}
+.view:hover{color:var(--steel);}
+.icon-actions{display:flex; gap:2px;}
+
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(10,18,30,0.5); z-index:50;
+  display:flex; align-items:flex-end; justify-content:center;
+}
+.modal-overlay.hide{display:none;}
+.modal-sheet{
+  background:var(--card); width:100%; max-width:640px; border-radius:14px 14px 0 0;
+  padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px)); max-height:85vh; overflow-y:auto;
+}
+.modal-sheet h3{font-size:16px; margin-bottom:12px;}
+.modal-close{float:right; background:none; border:none; font-size:18px; color:var(--steel-dim); cursor:pointer;}
+.modal-row{display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+.modal-row:last-child{border-bottom:none;}
+.modal-row span:first-child{color:var(--steel-dim);}
+.modal-row span:last-child{font-family:"IBM Plex Mono",monospace; text-align:right;}
+.modal-section-title{font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--steel-dim); margin:14px 0 2px;}
+.trip-right{display:flex; flex-direction:column; align-items:flex-end; gap:6px;}
+.trip-actions{display:flex; gap:2px;}
+#tripForm.editing, #truckForm.editing, #refuelForm.editing{border-color:var(--amber); background:var(--amber-bg);}
+#tripForm.editing #returGolRow{display:none;}
+.btn.ghost.amber{border-color:var(--amber); color:var(--amber);}
+.edit-banner{display:flex; justify-content:space-between; align-items:center; background:var(--amber); color:#fff; font-size:12.5px; font-weight:600; padding:7px 11px; border-radius:8px; margin-bottom:10px;}
+.edit-banner button{background:none; border:none; color:#fff; font-weight:600; text-decoration:underline; cursor:pointer; font-size:12.5px;}
+
+.kpi-row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;}
+.kpi{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
+.kpi .v{font-size:21px; font-weight:700;}
+.kpi .l{font-size:11.5px; color:var(--steel-dim); margin-top:2px;}
+.kpi.good{background:var(--good-bg); border-color:transparent;} .kpi.good .v{color:var(--good);}
+.kpi.bad{background:var(--bad-bg); border-color:transparent;} .kpi.bad .v{color:var(--bad);}
+
+.breakdown div{display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+.breakdown div:last-child{border-bottom:none;}
+.breakdown .neg{color:var(--bad);}
+
+nav.tabs{
+  position:fixed; bottom:0; left:0; right:0; padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--card); border-top:1px solid var(--line);
+  border-radius:18px 18px 0 0; box-shadow:0 -4px 20px rgba(37,78,165,0.12);
+  display:flex; z-index:20;
+}
+nav.tabs button{
+  flex:1; background:none; border:none; padding:10px 0 8px; color:var(--steel-dim);
+  font-size:11.5px; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;
+}
+nav.tabs button .ic{font-size:19px;}
+nav.tabs button.active{color:var(--amber);}
+nav.tabs button.active .ic{color:var(--amber);}
+
+.truck-chip{
+  display:inline-flex; align-items:center; gap:6px; padding:6px 13px; border-radius:20px;
+  border:1px solid var(--line); font-size:13px; margin:0 6px 6px 0; cursor:pointer; background:var(--card);
+}
+.truck-chip.active{background:var(--amber); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(47,111,237,0.35);}
+
+.empty-state{text-align:center; padding:40px 20px; color:var(--steel-dim);}
+.empty-state .ic{font-size:32px; margin-bottom:8px;}
+
+select#periodSel{width:auto;}
+.period-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+.period-row select{padding:8px 10px; border-radius:7px; border:1px solid var(--line); background:var(--card); color:var(--ink);}
+
+.fixed-list .field{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+.fixed-list .field label{flex:1; margin:0; font-size:13.5px; color:var(--ink);}
+.fixed-list .field input{width:110px;}
+.fixed-total{display:flex; justify-content:space-between; padding-top:8px; margin-top:4px; border-top:1px solid var(--line); font-weight:600; font-size:14px;}
+.time24{display:flex; align-items:center; gap:4px;}
+.time24 input{flex:1; min-width:0; text-align:center;}
+.time24 span{color:var(--steel-dim); font-weight:600;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <h1>🚛 Cursă cu Cursă</h1>
+  </div>
+  <div class="sub" id="headerSub">jurnal zilnic → profit real săptămânal</div>
+</header>
+
+<main>
+
+  <!-- TAB: CURSE -->
+  <section id="tab-curse">
+    <div id="truckChipsWrap" class="card hide">
+      <h3>Camion</h3>
+      <div id="truckChips"></div>
+    </div>
+
+    <div class="card" id="noTruckCard">
+      <div class="empty-state">
+        <div class="ic">🚚</div>
+        Adaugă mai întâi un camion în tab-ul „Flotă" ca să poți înregistra curse.
+      </div>
+    </div>
+
+    <form id="tripForm" class="card hide">
+      <div id="editBanner" class="edit-banner hide">
+        <span>✏️ Editezi o cursă existentă</span>
+        <button type="button" id="cancelEditBtn">Anulează</button>
+      </div>
+      <h3 id="tripFormTitle">Cursă nouă</h3>
+      <div id="returGolRow" style="margin-bottom:12px;">
+        <button type="button" id="continuaBtn" class="btn ghost amber small" style="width:100%;margin-bottom:8px;">📍 Continuă din ultima sosire</button>
+        <div class="grid2" style="margin-bottom:8px;">
+          <button type="button" id="returGolBtn" class="btn ghost amber small">↩ Retur gol — locație inițială</button>
+          <button type="button" id="returPlinBtn" class="btn ghost amber small">↩ Retur plin — ultima livrare</button>
+        </div>
+        <button type="button" id="returGolCancelBtn" class="btn ghost small" style="width:100%;">↺ Anulează</button>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Data plecare</label><input type="date" id="f_date" required></div>
+        <div class="field"><label>Ora plecare</label>
+          <div class="time24">
+            <input type="number" inputmode="numeric" min="0" max="23" placeholder="HH" id="f_time_start_h">
+            <span>:</span>
+            <input type="number" inputmode="numeric" min="0" max="59" placeholder="MM" id="f_time_start_m">
+          </div>
+          <input type="hidden" id="f_time_start">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Data sosire</label><input type="date" id="f_date_end" required></div>
+        <div class="field"><label>Ora sosire</label>
+          <div class="time24">
+            <input type="number" inputmode="numeric" min="0" max="23" placeholder="HH" id="f_time_end_h">
+            <span>:</span>
+            <input type="number" inputmode="numeric" min="0" max="59" placeholder="MM" id="f_time_end_m">
+          </div>
+          <input type="hidden" id="f_time_end">
+        </div>
+      </div>
+      <div id="dateOrderMsg" class="hide" style="font-size:12.5px; color:var(--bad); background:var(--bad-bg); border-radius:8px; padding:7px 10px; margin-bottom:10px;"></div>
+      <div class="grid2">
+        <div class="field"><label>Plecare (loc / client)</label><input type="text" id="f_from" list="locSuggestions" placeholder="ex: Greci (TL)" autocomplete="off"></div>
+        <div class="field"><label>Sosire (loc / client)</label><input type="text" id="f_to" list="locSuggestions" placeholder="ex: ADM CTP" autocomplete="off"></div>
+        <datalist id="locSuggestions"></datalist>
+      </div>
+      <div class="field"><label>Marfă</label><input type="text" id="f_marfa" placeholder="ex: Grâu — lasă gol dacă e cursă goală"></div>
+      <div class="grid2">
+        <div class="field"><label>Cantitate încărcată (to)</label><input type="number" step="0.01" inputmode="decimal" id="f_cant_inc" value="0"></div>
+        <div class="field"><label>Cantitate descărcată (to)</label><input type="number" step="0.01" inputmode="decimal" id="f_cant" value="0"></div>
+      </div>
+      <div id="cantDiffPreview" style="margin:-6px 0 10px; font-size:12.5px; color:var(--steel-dim);"></div>
+
+      <div class="grid2">
+        <div class="field"><label>Km bord — plecare <span style="font-weight:400;color:var(--steel-dim)">(auto)</span></label><input type="number" step="1" inputmode="numeric" id="f_kms"></div>
+        <div class="field"><label>Km bord — sosire</label><input type="number" step="1" inputmode="numeric" id="f_kme"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Litri bord — plecare <span style="font-weight:400;color:var(--steel-dim)">(auto)</span></label><input type="number" step="0.1" inputmode="decimal" id="f_ls"></div>
+        <div class="field"><label>Litri bord — sosire</label><input type="number" step="0.1" inputmode="decimal" id="f_le"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Tarif / tonă (RON)</label><input type="number" step="0.01" inputmode="decimal" id="f_tarif" value="0"></div>
+        <div class="field"><label>Costuri extra — taxă port, spălare etc. <span style="font-weight:400;color:var(--steel-dim)">(fără TollRo, calculat automat)</span></label><input type="number" step="0.01" inputmode="decimal" id="f_extra" value="0"></div>
+      </div>
+
+      <div class="field"><label>Livrare efectuată (descărcare reală) — ultimul pas</label></div>
+      <div class="grid2">
+        <div class="field"><label>Data livrare</label><input type="date" id="f_date_delivered"></div>
+        <div class="field"><label>Ora livrare</label>
+          <div class="time24">
+            <input type="number" inputmode="numeric" min="0" max="23" placeholder="HH" id="f_time_delivered_h">
+            <span>:</span>
+            <input type="number" inputmode="numeric" min="0" max="59" placeholder="MM" id="f_time_delivered_m">
+          </div>
+          <input type="hidden" id="f_time_delivered">
+        </div>
+      </div>
+      <div id="deliveryGuardMsg" class="hide" style="font-size:12.5px; color:var(--bad); background:var(--bad-bg); border-radius:8px; padding:7px 10px; margin-bottom:8px;"></div>
+      <div class="grid2" style="margin-bottom:6px;">
+        <button type="button" id="deliveredNowBtn" class="btn ghost amber small">✅ Livrare efectuată — acum</button>
+        <button type="button" id="deliveredClearBtn" class="btn ghost small">↺ Anulează</button>
+      </div>
+      <div id="waitPreview" style="margin:-2px 0 14px; font-size:12.5px; color:var(--steel-dim);"></div>
+
+      <button type="submit" class="btn primary" id="tripSubmitBtn">Salvează cursa</button>
+    </form>
+
+    <div id="tripList"></div>
+  </section>
+
+  <!-- TAB: SAPTAMANA -->
+  <section id="tab-saptamana" class="hide">
+    <div class="period-row">
+      <h3 style="margin:0">Perioadă</h3>
+      <select id="periodSel">
+        <option value="7">Ultimele 7 zile</option>
+        <option value="14">Ultimele 14 zile</option>
+        <option value="30">Ultimele 30 zile</option>
+        <option value="9999">Tot</option>
+      </select>
+    </div>
+
+    <div class="grid2" id="exportRow" style="margin-bottom:14px;">
+      <button type="button" id="exportExcelBtn" class="btn ghost small">⬇ Export Excel</button>
+      <button type="button" id="exportPdfBtn" class="btn ghost small">⬇ Export PDF</button>
+    </div>
+
+    <div id="fleetSummary"></div>
+
+    <div id="perTruckSummary"></div>
+  </section>
+
+  <!-- TAB: FLOTA -->
+  <section id="tab-flota" class="hide">
+    <form id="truckForm" class="card">
+      <div id="truckEditBanner" class="edit-banner hide">
+        <span>✏️ Editezi un camion existent</span>
+        <button type="button" id="cancelTruckEditBtn">Anulează</button>
+      </div>
+      <h3 id="truckFormTitle">Camion nou</h3>
+      <div class="grid2">
+        <div class="field"><label>Nume / nr. înmatriculare</label><input type="text" id="t_name" placeholder="ex: DAF — CT 07 ABC" required></div>
+        <div class="field"><label>Preț motorină / litru f.TVA (RON)</label><input type="number" step="0.01" inputmode="decimal" id="t_fuel" value="7.95" required></div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Normă de poluare</label>
+          <select id="t_euro">
+            <option value="euro6">Euro 6</option>
+            <option value="euro5">Euro 5</option>
+            <option value="euro4">Euro 4</option>
+            <option value="euro3">Euro 3 sau mai veche</option>
+          </select>
+        </div>
+        <div class="field"><label>% din traseu pe autostradă <span style="font-weight:400;color:var(--steel-dim)">(medie)</span></label><input type="number" step="1" inputmode="numeric" id="t_pctAutostrada" value="30"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>TollRo autostradă/expres (lei/km) <span style="font-weight:400;color:var(--steel-dim)">(auto)</span></label><input type="number" step="0.01" inputmode="decimal" id="t_tarifAutostrada" value="0.48"></div>
+        <div class="field"><label>TollRo național (lei/km) <span style="font-weight:400;color:var(--steel-dim)">(auto)</span></label><input type="number" step="0.01" inputmode="decimal" id="t_tarifNational" value="0.24"></div>
+      </div>
+      <div class="fixed-list">
+        <div class="field"><label>Leasing camion</label><input type="number" step="1" inputmode="decimal" id="t_leasing" value="0"></div>
+        <div class="field"><label>Leasing/rate remorcă-benă</label><input type="number" step="1" inputmode="decimal" id="t_bena" value="0"></div>
+        <div class="field"><label>Asigurare (RCA+CASCO)</label><input type="number" step="1" inputmode="decimal" id="t_asig" value="0"></div>
+        <div class="field"><label>Salariu șofer</label><input type="number" step="1" inputmode="decimal" id="t_salariu" value="0"></div>
+        <div class="field"><label>Diurnă (lunar)</label><input type="number" step="1" inputmode="decimal" id="t_diurna" value="0"></div>
+        <div class="field"><label>Mentenanță estimată</label><input type="number" step="1" inputmode="decimal" id="t_mentenanta" value="0"></div>
+        <div class="field"><label>Cauciucuri (provizion lunar)</label><input type="number" step="1" inputmode="decimal" id="t_cauciucuri" value="0"></div>
+        <div class="field"><label>Alte taxe fixe lunare (ITP, autorizații etc.)</label><input type="number" step="1" inputmode="decimal" id="t_rovinieta" value="0"></div>
+      </div>
+      <div class="fixed-total"><span>Cost fix / zi lucrată</span><span class="mono" id="t_fixPerDay">0 RON</span></div>
+      <br>
+      <button type="submit" class="btn primary" id="truckSubmitBtn">Adaugă camion</button>
+    </form>
+
+    <div id="truckManageList"></div>
+  </section>
+
+  <!-- TAB: ALIMENTARI -->
+  <section id="tab-alimentari" class="hide">
+    <div id="refuelTruckChipsWrap" class="card hide">
+      <h3>Camion</h3>
+      <div id="refuelTruckChips"></div>
+    </div>
+
+    <div class="card" id="noTruckCardRefuel">
+      <div class="empty-state">
+        <div class="ic">⛽</div>
+        Adaugă mai întâi un camion în tab-ul „Flotă" ca să poți înregistra alimentări.
+      </div>
+    </div>
+
+    <form id="refuelForm" class="card hide">
+      <div id="refuelEditBanner" class="edit-banner hide">
+        <span>✏️ Editezi o alimentare existentă</span>
+        <button type="button" id="cancelEditRefuelBtn">Anulează</button>
+      </div>
+      <h3 id="refuelFormTitle">Alimentare nouă</h3>
+
+      <div class="grid2">
+        <div class="field"><label>Data</label><input type="date" id="r_date" required></div>
+        <div class="field"><label>Ora <span style="font-weight:400;color:var(--steel-dim)">(opțional)</span></label>
+          <div class="time24">
+            <input type="number" inputmode="numeric" min="0" max="23" placeholder="HH" id="r_time_h">
+            <span>:</span>
+            <input type="number" inputmode="numeric" min="0" max="59" placeholder="MM" id="r_time_m">
+          </div>
+          <input type="hidden" id="r_time">
+        </div>
+      </div>
+
+      <div class="field"><label>Tip alimentare</label>
+        <select id="r_tip">
+          <option value="carburant">⛽ Carburant</option>
+          <option value="adblue">💧 AdBlue</option>
+        </select>
+      </div>
+
+      <div class="grid2">
+        <div class="field"><label>Cantitate alimentată (L)</label><input type="number" step="0.1" inputmode="decimal" id="r_cantitate" value="0"></div>
+        <div class="field"><label>Preț / litru <span style="font-weight:400;color:var(--steel-dim)">(opțional)</span></label><input type="number" step="0.01" inputmode="decimal" id="r_pret" value="0"></div>
+      </div>
+
+      <div class="grid2">
+        <div class="field"><label>Km bord</label><input type="number" step="1" inputmode="numeric" id="r_km"></div>
+        <div class="field"><label>Litri bord</label><input type="number" step="0.1" inputmode="decimal" id="r_litriBord"></div>
+      </div>
+
+      <button type="submit" class="btn primary" id="refuelSubmitBtn">Salvează alimentarea</button>
+    </form>
+
+    <div id="refuelSummary"></div>
+    <div id="refuelList"></div>
+  </section>
+
+</main>
+
+<nav class="tabs">
+  <button data-tab="curse" class="active"><span class="ic">🧾</span>Curse</button>
+  <button data-tab="saptamana"><span class="ic">📊</span>Săptămâna</button>
+  <button data-tab="flota"><span class="ic">🚚</span>Flotă</button>
+  <button data-tab="alimentari"><span class="ic">⛽</span>Alimentări</button>
+</nav>
+
+<div class="modal-overlay hide" id="deleteTripModal">
+  <div class="modal-sheet">
+    <h3 style="margin-bottom:6px">Ștergi cursa?</h3>
+    <p id="deleteTripInfo" style="font-size:13.5px;color:var(--steel-dim);margin:0 0 16px"></p>
+    <button type="button" class="btn danger" id="delTripConfirmBtn" style="margin-bottom:8px;">Șterge cursa</button>
+    <button type="button" class="btn ghost" id="delTripCancelBtn">Anulează</button>
+  </div>
+</div>
+
+<div class="modal-overlay hide" id="deleteTruckModal">
+  <div class="modal-sheet">
+    <h3 style="margin-bottom:6px">Ștergi camionul?</h3>
+    <p id="deleteTruckName" style="font-size:13.5px;color:var(--steel-dim);margin:0 0 16px"></p>
+    <button type="button" class="btn danger" id="delTruckOnlyBtn" style="margin-bottom:8px;">Șterge doar camionul <span style="font-weight:400">(păstrează cursele)</span></button>
+    <button type="button" class="btn danger" id="delTruckAndTripsBtn" style="margin-bottom:8px;">Șterge camion + curse și alimentări atașate</button>
+    <button type="button" class="btn ghost" id="delTruckCancelBtn">Anulează</button>
+  </div>
+</div>
+
+<div class="modal-overlay hide" id="deleteRefuelModal">
+  <div class="modal-sheet">
+    <h3 style="margin-bottom:6px">Ștergi alimentarea?</h3>
+    <p id="deleteRefuelInfo" style="font-size:13.5px;color:var(--steel-dim);margin:0 0 16px"></p>
+    <button type="button" class="btn danger" id="delRefuelConfirmBtn" style="margin-bottom:8px;">Șterge alimentarea</button>
+    <button type="button" class="btn ghost" id="delRefuelCancelBtn">Anulează</button>
+  </div>
+</div>
+
+<div class="modal-overlay hide" id="viewModal">
+  <div class="modal-sheet">
+    <button class="modal-close" id="modalCloseBtn" aria-label="Închide">✕</button>
+    <h3>Detalii cursă</h3>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js"></script>
+<script>
+const RON = n => (Math.round(n*100)/100).toLocaleString('ro-RO',{minimumFractionDigits:0,maximumFractionDigits:0}) + ' RON';
+const RON2 = n => (Math.round(n*100)/100).toLocaleString('ro-RO',{minimumFractionDigits:2,maximumFractionDigits:2});
+const todayStr = () => new Date().toISOString().slice(0,10);
+const uid = () => Math.random().toString(36).slice(2,10);
+
+let state = { trucks: [], trips: [], refuels: [], activeTruck: null };
+let editingTripId = null;
+let editingRefuelId = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem('ccc_state_v1');
+    if(raw) state = JSON.parse(raw);
+  }catch(e){ console.warn('storage indisponibil', e); }
+  if(!state.trucks) state.trucks=[];
+  if(!state.trips) state.trips=[];
+  if(!state.refuels) state.refuels=[];
+}
+function save(){
+  try{ localStorage.setItem('ccc_state_v1', JSON.stringify(state)); }
+  catch(e){ console.warn('nu am putut salva', e); }
+}
+
+function fixedPerDay(t){
+  const sum = (t.leasing||0)+(t.bena||0)+(t.asig||0)+(t.salariu||0)+(t.diurna||0)+(t.mentenanta||0)+(t.cauciucuri||0)+(t.rovinieta||0);
+  return sum/30;
+}
+
+const TOLERANTA_KG = 60;
+function qtyDiffKg(trip){
+  // pozitiv = lipsă (s-a descărcat mai puțin decât s-a încărcat), negativ = surplus
+  return Math.round(((trip.cantInc||0)-(trip.cant||0))*1000);
+}
+function qtyDiffColor(diffKg){
+  if(diffKg===0) return 'var(--steel-dim)';
+  if(diffKg<0) return 'var(--good)'; // surplus = mereu verde
+  return Math.abs(diffKg) > TOLERANTA_KG ? 'var(--bad)' : 'var(--steel-dim)'; // lipsă = roșu doar peste toleranță
+}
+function qtyDiffLabel(diffKg, withinToleranceOnly){
+  if(diffKg===0) return '';
+  const overTol = Math.abs(diffKg) > TOLERANTA_KG;
+  if(withinToleranceOnly && !overTol) return '';
+  const sign = diffKg>0 ? '−' : '+';
+  const word = diffKg>0 ? 'lipsă' : 'surplus';
+  return {text:`${sign}${Math.abs(diffKg)} kg ${word}`, overTol, color: qtyDiffColor(diffKg)};
+}
+
+function updateCantDiffPreview(){
+  const inc = +document.getElementById('f_cant_inc').value||0;
+  const desc = +document.getElementById('f_cant').value||0;
+  const el = document.getElementById('cantDiffPreview');
+  if(inc===0 && desc===0){ el.textContent=''; return; }
+  const diffKg = Math.round((inc-desc)*1000);
+  if(diffKg===0){ el.textContent = 'Fără diferență între încărcat și descărcat.'; el.style.color='var(--steel-dim)'; return; }
+  const sign = diffKg>0 ? '−' : '+';
+  const word = diffKg>0 ? 'lipsă la descărcare' : 'surplus la descărcare';
+  const overTol = Math.abs(diffKg) > TOLERANTA_KG;
+  const tolNote = diffKg>0 ? (overTol?' — peste toleranța de 60 kg':' — în toleranță') : '';
+  el.textContent = `${sign}${Math.abs(diffKg)} kg ${word}${tolNote}`;
+  el.style.color = qtyDiffColor(diffKg);
+}
+document.getElementById('f_cant_inc').addEventListener('input', updateCantDiffPreview);
+document.getElementById('f_cant').addEventListener('input', updateCantDiffPreview);
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function nowTimeStr(){ const d=new Date(); return pad2(d.getHours())+':'+pad2(d.getMinutes()); }
+
+// Câmpuri de oră proprii, format 24h (HH:MM), independente de locale-ul telefonului —
+// input-ul ascuns cu id-ul de bază păstrează valoarea canonică "HH:MM" folosită în tot restul codului.
+function setTimeField(id, val){
+  const hidden = document.getElementById(id);
+  hidden.value = val || '';
+  const [h,m] = (val||'').split(':');
+  const hEl = document.getElementById(id+'_h'), mEl = document.getElementById(id+'_m');
+  if(hEl) hEl.value = (h!==undefined && h!=='') ? parseInt(h,10) : '';
+  if(mEl) mEl.value = (m!==undefined && m!=='') ? parseInt(m,10) : '';
+}
+function wireTimeField(id, onChange){
+  const hEl = document.getElementById(id+'_h'), mEl = document.getElementById(id+'_m'), hidden = document.getElementById(id);
+  function sync(){
+    let h = hEl.value===''?NaN:Math.max(0,Math.min(23,+hEl.value));
+    let m = mEl.value===''?NaN:Math.max(0,Math.min(59,+mEl.value));
+    if(!isNaN(h)) hEl.value = h;
+    if(!isNaN(m)) mEl.value = m;
+    hidden.value = (!isNaN(h) && !isNaN(m)) ? (pad2(h)+':'+pad2(m)) : '';
+    if(onChange) onChange();
+  }
+  hEl.addEventListener('input', sync);
+  mEl.addEventListener('input', sync);
+}
+wireTimeField('f_time_start', ()=>updateDateOrderCheck());
+wireTimeField('f_time_end', ()=>{ updateWaitPreview(); updateDateOrderCheck(); });
+wireTimeField('f_time_delivered', ()=>{ updateWaitPreview(); updateDateOrderCheck(); });
+
+// Totul trebuie să fie cronologic: plecare ≤ sosire ≤ livrare.
+// 1) Calendarul nu lasă să alegi o dată de sosire/livrare înainte de cea precedentă.
+// 2) La fiecare schimbare, verificăm și ora (nu doar data) și semnalăm clar conflictul.
+function momentBefore(d1,t1,d2,t2){
+  // true dacă (d2,t2) e strict înainte de (d1,t1)
+  if(!d1 || !d2) return false;
+  if(d2 < d1) return true;
+  if(d2 > d1) return false;
+  if(t1 && t2) return t2 < t1; // "HH:MM" cu zero-padding — comparabil ca text
+  return false;
+}
+function dateOrderMessage(){
+  const dP = document.getElementById('f_date').value, tP = document.getElementById('f_time_start').value;
+  const dS = document.getElementById('f_date_end').value, tS = document.getElementById('f_time_end').value;
+  const dL = document.getElementById('f_date_delivered').value, tL = document.getElementById('f_time_delivered').value;
+  if(momentBefore(dP,tP,dS,tS)) return 'Data/ora sosirii nu poate fi înainte de data/ora plecării.';
+  if(momentBefore(dS,tS,dL,tL)) return 'Data/ora livrării nu poate fi înainte de data/ora sosirii.';
+  if(momentBefore(dP,tP,dL,tL)) return 'Data/ora livrării nu poate fi înainte de data/ora plecării.';
+  return '';
+}
+function updateDateOrderCheck(){
+  // calendarul de sosire nu arată date de dinainte de plecare; cel de livrare, nu arată date de dinainte de sosire
+  const dP = document.getElementById('f_date').value;
+  const dS = document.getElementById('f_date_end').value;
+  document.getElementById('f_date_end').min = dP || '';
+  document.getElementById('f_date_delivered').min = dS || dP || '';
+  const msg = dateOrderMessage();
+  const el = document.getElementById('dateOrderMsg');
+  if(msg){ el.textContent = msg; el.classList.remove('hide'); }
+  else el.classList.add('hide');
+  return msg;
+}
+['f_date','f_date_end','f_date_delivered'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', updateDateOrderCheck);
+});
+
+function updateWaitPreview(){
+  const el = document.getElementById('waitPreview');
+  const dD = document.getElementById('f_date_delivered').value;
+  const tD = document.getElementById('f_time_delivered').value;
+  if(!dD || !tD){ el.textContent=''; return; }
+  const sD = document.getElementById('f_date_end').value;
+  const sT = document.getElementById('f_time_end').value;
+  if(!sD || !sT){ el.textContent = 'Completează și ora sosirii ca să calculăm timpul de așteptare.'; el.style.color='var(--steel-dim)'; return; }
+  const h = (new Date(dD+'T'+tD) - new Date(sD+'T'+sT))/3600000;
+  if(!isFinite(h) || h<0){ el.textContent = 'Ora livrării e înainte de ora sosirii — verifică datele.'; el.style.color='var(--bad)'; return; }
+  const overTol = h > PRAG_ASTEPTARE_H;
+  el.textContent = `Timp așteptare la descărcare: ${h.toFixed(1)} h${overTol?' — timp mare de așteptare':''}`;
+  el.style.color = overTol ? 'var(--bad)' : 'var(--steel-dim)';
+}
+['f_date_end','f_time_end','f_date_delivered','f_time_delivered'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', updateWaitPreview);
+});
+['f_date_delivered','f_time_delivered'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{
+    const d = document.getElementById('f_date_delivered').value;
+    const t = document.getElementById('f_time_delivered').value;
+    if(d && t) document.getElementById('deliveryGuardMsg').classList.add('hide');
+  });
+});
+
+function deliveryGuardMessage(){
+  const marfa = document.getElementById('f_marfa').value.trim();
+  if(!marfa) return ''; // cursă goală — nu se aplică
+  const cantInc = +document.getElementById('f_cant_inc').value||0;
+  const cant = +document.getElementById('f_cant').value||0;
+  const tarif = +document.getElementById('f_tarif').value||0;
+  const lipsa = [];
+  if(cantInc<=0) lipsa.push('Cantitate încărcată');
+  if(cant<=0) lipsa.push('Cantitate descărcată');
+  if(tarif<=0) lipsa.push('Tarif/tonă');
+  if(lipsa.length===0) return '';
+  return `Ai marfă trecută, dar lipsește: ${lipsa.join(', ')}. Completează înainte de a marca livrarea.`;
+}
+
+['f_marfa','f_cant_inc','f_cant','f_tarif'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{
+    if(!deliveryGuardMessage()) document.getElementById('deliveryGuardMsg').classList.add('hide');
+  });
+});
+
+document.getElementById('deliveredNowBtn').addEventListener('click', ()=>{
+  const msg = deliveryGuardMessage();
+  const guardEl = document.getElementById('deliveryGuardMsg');
+  if(msg){ guardEl.textContent = msg; guardEl.classList.remove('hide'); return; }
+  guardEl.classList.add('hide');
+  document.getElementById('f_date_delivered').value = todayStr();
+  setTimeField('f_time_delivered', nowTimeStr());
+  updateWaitPreview();
+});
+document.getElementById('deliveredClearBtn').addEventListener('click', ()=>{
+  document.getElementById('f_date_delivered').value = '';
+  setTimeField('f_time_delivered', '');
+  updateWaitPreview();
+});
+
+const PRAG_ASTEPTARE_H = 3;
+function waitHours(trip){
+  if(!trip.dateEnd || !trip.timeEnd || !trip.deliveredDate || !trip.deliveredTime) return null;
+  const start = new Date(trip.dateEnd+'T'+trip.timeEnd);
+  const end = new Date(trip.deliveredDate+'T'+trip.deliveredTime);
+  const h = (end-start)/3600000;
+  return (isFinite(h) && h>=0) ? h : null;
+}
+
+function tripCalc(trip, truck){
+  const facturat = (trip.tarif||0) * (trip.cant||0);
+  const litri = Math.max(0,(trip.le||0)-(trip.ls||0));
+  const costCarburant = litri * (truck ? truck.fuel : 0);
+  const km = Math.max(0,(trip.kme||0)-(trip.kms||0));
+  let costTollRo = 0;
+  if(truck && km>0){
+    const pctAutostrada = (truck.pctAutostrada ?? 30)/100;
+    const pctNational = 1 - pctAutostrada;
+    const tA = truck.tarifAutostrada || TOLLRO_TARIFE.euro6.autostrada;
+    const tN = truck.tarifNational || TOLLRO_TARIFE.euro6.national;
+    costTollRo = km*pctAutostrada*tA + km*pctNational*tN;
+  }
+  const marja = facturat - (trip.extra||0) - costCarburant - costTollRo;
+  return {facturat, costCarburant, costTollRo, marja, isEmpty: !trip.marfa || (trip.cant||0)===0};
+}
+
+// ---------- TABS ----------
+document.querySelectorAll('nav.tabs button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    ['curse','saptamana','flota','alimentari'].forEach(t=>{
+      document.getElementById('tab-'+t).classList.toggle('hide', t!==b.dataset.tab);
+    });
+    if(b.dataset.tab==='saptamana') renderSummary();
+    if(b.dataset.tab==='flota') renderTruckManage();
+    if(b.dataset.tab==='alimentari'){ renderRefuelTruckChips(); renderRefuelList(); }
+  });
+});
+
+// ---------- FLOTA ----------
+// Tarife TollRo (lei/km, camioane ≥12t) — doar Euro 6 confirmat oficial (0,48 autostradă/expres, 0,24 național);
+// restul claselor sunt estimări aproximative în intervalul public cunoscut (0,48–0,62 / 0,24–0,31), editabile manual.
+const TOLLRO_TARIFE = {
+  euro6:{autostrada:0.48, national:0.24},
+  euro5:{autostrada:0.53, national:0.27},
+  euro4:{autostrada:0.58, national:0.29},
+  euro3:{autostrada:0.62, national:0.31},
+};
+document.getElementById('t_euro').addEventListener('change', e=>{
+  const t = TOLLRO_TARIFE[e.target.value] || TOLLRO_TARIFE.euro6;
+  document.getElementById('t_tarifAutostrada').value = t.autostrada;
+  document.getElementById('t_tarifNational').value = t.national;
+});
+
+document.getElementById('t_leasing').closest('form');
+['t_leasing','t_bena','t_asig','t_salariu','t_diurna','t_mentenanta','t_cauciucuri','t_rovinieta'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', updateFixPreview);
+});
+function updateFixPreview(){
+  const t = {
+    leasing:+document.getElementById('t_leasing').value||0,
+    bena:+document.getElementById('t_bena').value||0,
+    asig:+document.getElementById('t_asig').value||0,
+    salariu:+document.getElementById('t_salariu').value||0,
+    diurna:+document.getElementById('t_diurna').value||0,
+    mentenanta:+document.getElementById('t_mentenanta').value||0,
+    cauciucuri:+document.getElementById('t_cauciucuri').value||0,
+    rovinieta:+document.getElementById('t_rovinieta').value||0,
+  };
+  document.getElementById('t_fixPerDay').textContent = RON(fixedPerDay(t));
+}
+
+let editingTruckId = null;
+
+function readTruckForm(){
+  return {
+    name: document.getElementById('t_name').value.trim(),
+    fuel: +document.getElementById('t_fuel').value||0,
+    euro: document.getElementById('t_euro').value,
+    pctAutostrada: +document.getElementById('t_pctAutostrada').value||0,
+    tarifAutostrada: +document.getElementById('t_tarifAutostrada').value||0,
+    tarifNational: +document.getElementById('t_tarifNational').value||0,
+    leasing:+document.getElementById('t_leasing').value||0,
+    bena:+document.getElementById('t_bena').value||0,
+    asig:+document.getElementById('t_asig').value||0,
+    salariu:+document.getElementById('t_salariu').value||0,
+    diurna:+document.getElementById('t_diurna').value||0,
+    mentenanta:+document.getElementById('t_mentenanta').value||0,
+    cauciucuri:+document.getElementById('t_cauciucuri').value||0,
+    rovinieta:+document.getElementById('t_rovinieta').value||0,
+  };
+}
+
+function resetTruckForm(){
+  document.getElementById('truckForm').reset();
+  document.getElementById('t_fuel').value = 7.95;
+  document.getElementById('t_euro').value = 'euro6';
+  document.getElementById('t_pctAutostrada').value = 30;
+  document.getElementById('t_tarifAutostrada').value = TOLLRO_TARIFE.euro6.autostrada;
+  document.getElementById('t_tarifNational').value = TOLLRO_TARIFE.euro6.national;
+  updateFixPreview();
+}
+
+function startEditTruck(truck){
+  editingTruckId = truck.id;
+  document.getElementById('t_name').value = truck.name||'';
+  document.getElementById('t_fuel').value = truck.fuel||0;
+  document.getElementById('t_euro').value = truck.euro||'euro6';
+  document.getElementById('t_pctAutostrada').value = truck.pctAutostrada ?? 30;
+  document.getElementById('t_tarifAutostrada').value = truck.tarifAutostrada ?? TOLLRO_TARIFE.euro6.autostrada;
+  document.getElementById('t_tarifNational').value = truck.tarifNational ?? TOLLRO_TARIFE.euro6.national;
+  document.getElementById('t_leasing').value = truck.leasing||0;
+  document.getElementById('t_bena').value = truck.bena||0;
+  document.getElementById('t_asig').value = truck.asig||0;
+  document.getElementById('t_salariu').value = truck.salariu||0;
+  document.getElementById('t_diurna').value = truck.diurna||0;
+  document.getElementById('t_mentenanta').value = truck.mentenanta||0;
+  document.getElementById('t_cauciucuri').value = truck.cauciucuri||0;
+  document.getElementById('t_rovinieta').value = truck.rovinieta||0;
+  updateFixPreview();
+  document.getElementById('truckEditBanner').classList.remove('hide');
+  document.getElementById('truckFormTitle').classList.add('hide');
+  document.getElementById('truckForm').classList.add('editing');
+  document.getElementById('truckSubmitBtn').textContent = 'Salvează modificările';
+  document.getElementById('truckForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function cancelEditTruck(){
+  editingTruckId = null;
+  resetTruckForm();
+  document.getElementById('truckEditBanner').classList.add('hide');
+  document.getElementById('truckFormTitle').classList.remove('hide');
+  document.getElementById('truckForm').classList.remove('editing');
+  document.getElementById('truckSubmitBtn').textContent = 'Adaugă camion';
+}
+document.getElementById('cancelTruckEditBtn').addEventListener('click', cancelEditTruck);
+
+document.getElementById('truckForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const data = readTruckForm();
+  if(editingTruckId){
+    const idx = state.trucks.findIndex(t=>t.id===editingTruckId);
+    if(idx>-1) state.trucks[idx] = {...state.trucks[idx], ...data};
+    cancelEditTruck();
+  } else {
+    const truck = {id: uid(), ...data};
+    state.trucks.push(truck);
+    if(!state.activeTruck) state.activeTruck = truck.id;
+    resetTruckForm();
+  }
+  save();
+  renderAll();
+  renderTruckManage();
+});
+
+const EURO_LABELS = {euro6:'Euro 6', euro5:'Euro 5', euro4:'Euro 4', euro3:'Euro 3 sau mai veche'};
+function viewTruck(t){
+  const rows = [
+    ['Nume / nr. înmatriculare', escapeHtml(t.name)],
+    ['Preț motorină / litru f.TVA', RON2(t.fuel)+' RON'],
+    ['Leasing camion', RON(t.leasing)],
+    ['Leasing/rate remorcă-benă', RON(t.bena)],
+    ['Asigurare (RCA+CASCO)', RON(t.asig)],
+    ['Salariu șofer', RON(t.salariu)],
+    ['Diurnă (lunar)', RON(t.diurna)],
+    ['Mentenanță estimată', RON(t.mentenanta)],
+    ['Cauciucuri (provizion lunar)', RON(t.cauciucuri)],
+    ['Alte taxe fixe lunare', RON(t.rovinieta)],
+    ['Cost fix / zi lucrată', RON(fixedPerDay(t))],
+  ];
+  const tollRows = [
+    ['Normă de poluare', EURO_LABELS[t.euro]||EURO_LABELS.euro6],
+    ['Mix traseu (autostradă / național)', `${t.pctAutostrada ?? 30}% / ${100-(t.pctAutostrada ?? 30)}%`],
+    ['TollRo autostradă/expres', RON2(t.tarifAutostrada||TOLLRO_TARIFE.euro6.autostrada)+' lei/km'],
+    ['TollRo național', RON2(t.tarifNational||TOLLRO_TARIFE.euro6.national)+' lei/km'],
+  ];
+  document.getElementById('modalBody').innerHTML =
+    '<div class="modal-section-title">Date camion</div>' +
+    rows.map(([l,v],i)=>`<div class="modal-row"${i===rows.length-1?' style="font-weight:700"':''}><span>${l}</span><span>${v}</span></div>`).join('') +
+    '<div class="modal-section-title">Taxă drum (TollRo) — estimare</div>' +
+    tollRows.map(([l,v])=>`<div class="modal-row"><span>${l}</span><span>${v}</span></div>`).join('');
+  document.getElementById('viewModal').classList.remove('hide');
+}
+
+function renderTruckManage(){
+  const wrap = document.getElementById('truckManageList');
+  if(state.trucks.length===0){ wrap.innerHTML=''; return; }
+  wrap.innerHTML = '<h3 style="margin:16px 2px 8px;font-size:13px;color:var(--steel)">Camioane în flotă</h3>' +
+    state.trucks.map(t=>`
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:600">${escapeHtml(t.name)}</div>
+            <div class="mono" style="font-size:12px;color:var(--steel-dim);margin-top:2px">
+              ${RON(fixedPerDay(t))}/zi fix · ${t.fuel.toFixed(2)} RON/litru
+            </div>
+          </div>
+          <div class="icon-actions">
+            <button class="view" data-view-truck="${t.id}" title="Vezi detalii" aria-label="Vezi detalii">👁</button>
+            <button class="edit" data-edit-truck="${t.id}" title="Editează camionul" aria-label="Editează camionul">✎</button>
+            <button class="del" data-del-truck="${t.id}" title="Șterge camionul" aria-label="Șterge camionul">✕</button>
+          </div>
+        </div>
+      </div>`).join('');
+  wrap.querySelectorAll('[data-del-truck]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openDeleteTruckModal(btn.dataset.delTruck));
+  });
+  wrap.querySelectorAll('[data-edit-truck]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const t = state.trucks.find(x=>x.id===btn.dataset.editTruck);
+      if(t) startEditTruck(t);
+    });
+  });
+  wrap.querySelectorAll('[data-view-truck]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const t = state.trucks.find(x=>x.id===btn.dataset.viewTruck);
+      if(t) viewTruck(t);
+    });
+  });
+}
+
+// ---------- CURSE ----------
+function renderTruckChips(){
+  const wrap = document.getElementById('truckChips');
+  const wrapCard = document.getElementById('truckChipsWrap');
+  const noTruck = document.getElementById('noTruckCard');
+  const form = document.getElementById('tripForm');
+  if(state.trucks.length===0){
+    wrapCard.classList.add('hide'); noTruck.classList.remove('hide'); form.classList.add('hide');
+    document.getElementById('tripList').innerHTML='';
+    return;
+  }
+  wrapCard.classList.remove('hide'); noTruck.classList.add('hide'); form.classList.remove('hide');
+  if(!state.activeTruck || !state.trucks.find(t=>t.id===state.activeTruck)) state.activeTruck = state.trucks[0].id;
+  wrap.innerHTML = state.trucks.map(t=>`<span class="truck-chip ${t.id===state.activeTruck?'active':''}" data-truck="${t.id}">${escapeHtml(t.name)}</span>`).join('');
+  wrap.querySelectorAll('.truck-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      state.activeTruck = chip.dataset.truck; save(); renderAll();
+      if(!editingTripId) prefillContinuity();
+    });
+  });
+}
+
+// ---------- ALIMENTARI (carburant / AdBlue) ----------
+function renderRefuelTruckChips(){
+  const wrap = document.getElementById('refuelTruckChips');
+  const wrapCard = document.getElementById('refuelTruckChipsWrap');
+  const noTruck = document.getElementById('noTruckCardRefuel');
+  const form = document.getElementById('refuelForm');
+  if(state.trucks.length===0){
+    wrapCard.classList.add('hide'); noTruck.classList.remove('hide'); form.classList.add('hide');
+    document.getElementById('refuelList').innerHTML='';
+    document.getElementById('refuelSummary').innerHTML='';
+    return;
+  }
+  wrapCard.classList.remove('hide'); noTruck.classList.add('hide'); form.classList.remove('hide');
+  if(!state.activeTruck || !state.trucks.find(t=>t.id===state.activeTruck)) state.activeTruck = state.trucks[0].id;
+  wrap.innerHTML = state.trucks.map(t=>`<span class="truck-chip ${t.id===state.activeTruck?'active':''}" data-truck="${t.id}">${escapeHtml(t.name)}</span>`).join('');
+  wrap.querySelectorAll('.truck-chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      state.activeTruck = chip.dataset.truck; save(); renderAll();
+    });
+  });
+}
+
+function readRefuelForm(){
+  return {
+    date: document.getElementById('r_date').value || todayStr(),
+    time: document.getElementById('r_time').value || '',
+    tip: document.getElementById('r_tip').value,
+    cantitate: +document.getElementById('r_cantitate').value||0,
+    pret: +document.getElementById('r_pret').value||0,
+    km: +document.getElementById('r_km').value||0,
+    litriBord: +document.getElementById('r_litriBord').value||0,
+  };
+}
+function resetRefuelForm(){
+  document.getElementById('refuelForm').reset();
+  document.getElementById('r_date').value = todayStr();
+  setTimeField('r_time', '');
+  document.getElementById('r_tip').value = 'carburant';
+  document.getElementById('r_cantitate').value = 0;
+  document.getElementById('r_pret').value = 0;
+  document.getElementById('r_km').value = '';
+  document.getElementById('r_litriBord').value = '';
+}
+function startEditRefuel(r){
+  editingRefuelId = r.id;
+  document.getElementById('r_date').value = r.date;
+  setTimeField('r_time', r.time||'');
+  document.getElementById('r_tip').value = r.tip;
+  document.getElementById('r_cantitate').value = r.cantitate||0;
+  document.getElementById('r_pret').value = r.pret||0;
+  document.getElementById('r_km').value = r.km||'';
+  document.getElementById('r_litriBord').value = r.litriBord||'';
+  document.getElementById('refuelEditBanner').classList.remove('hide');
+  document.getElementById('refuelFormTitle').classList.add('hide');
+  document.getElementById('refuelForm').classList.add('editing');
+  document.getElementById('refuelSubmitBtn').textContent = 'Salvează modificările';
+  document.getElementById('refuelForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
+function cancelEditRefuel(){
+  editingRefuelId = null;
+  resetRefuelForm();
+  document.getElementById('refuelEditBanner').classList.add('hide');
+  document.getElementById('refuelFormTitle').classList.remove('hide');
+  document.getElementById('refuelForm').classList.remove('editing');
+  document.getElementById('refuelSubmitBtn').textContent = 'Salvează alimentarea';
+}
+document.getElementById('cancelEditRefuelBtn').addEventListener('click', cancelEditRefuel);
+
+document.getElementById('refuelForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const data = readRefuelForm();
+  if(editingRefuelId){
+    const idx = state.refuels.findIndex(r=>r.id===editingRefuelId);
+    if(idx>-1) state.refuels[idx] = {...state.refuels[idx], ...data};
+    cancelEditRefuel();
+  } else {
+    state.refuels.unshift({ id: uid(), truckId: state.activeTruck, ...data });
+    resetRefuelForm();
+  }
+  save();
+  renderRefuelList();
+});
+
+function renderRefuelSummary(refuels){
+  const el = document.getElementById('refuelSummary');
+  if(!el) return;
+  if(!refuels || refuels.length===0){ el.innerHTML=''; return; }
+  const carburant = refuels.filter(r=>r.tip==='carburant');
+  const adblue = refuels.filter(r=>r.tip==='adblue');
+  const sumL = arr => arr.reduce((s,r)=>s+(r.cantitate||0),0);
+  const sumCost = arr => arr.reduce((s,r)=> s + (r.pret>0 ? r.cantitate*r.pret : 0), 0);
+  const costCarburant = sumCost(carburant), costAdblue = sumCost(adblue);
+  el.innerHTML = `<div class="card">
+    <h3>Alimentări — total camion</h3>
+    <div class="breakdown">
+      <div><span>⛽ Carburant alimentat</span><span class="mono">${sumL(carburant).toFixed(0)} L${costCarburant>0?' · '+RON(costCarburant):''}</span></div>
+      <div><span>💧 AdBlue alimentat</span><span class="mono">${sumL(adblue).toFixed(0)} L${costAdblue>0?' · '+RON(costAdblue):''}</span></div>
+    </div>
+  </div>`;
+}
+
+function renderRefuelList(){
+  const list = document.getElementById('refuelList');
+  if(!list) return;
+  const refuels = state.refuels.filter(r=>r.truckId===state.activeTruck)
+    .sort((a,b)=> (b.date+(b.time||'00:00')).localeCompare(a.date+(a.time||'00:00')));
+  renderRefuelSummary(refuels);
+  if(refuels.length===0){ list.innerHTML=''; return; }
+  list.innerHTML = refuels.map(r=>{
+    const isAdblue = r.tip==='adblue';
+    const cost = r.pret>0 ? r.cantitate*r.pret : null;
+    return `<div class="trip">
+      <div>
+        <div class="route">${isAdblue?'💧 AdBlue':'⛽ Carburant'}</div>
+        <div class="meta">${r.date}${r.time?' · '+r.time:''}${r.km?' · '+r.km+' km bord':''}${r.litriBord?' · '+r.litriBord+' L bord':''}</div>
+      </div>
+      <div class="trip-right">
+        <div class="trip-actions">
+          <button class="edit" data-edit-refuel="${r.id}" title="Editează" aria-label="Editează">✎</button>
+          <button class="del" data-del-refuel="${r.id}" title="Șterge" aria-label="Șterge">✕</button>
+        </div>
+        <div class="num">
+          <div class="big">${r.cantitate} L</div>
+          <div class="lbl">${cost!==null?RON(cost)+' · '+RON2(r.pret)+' RON/L':'preț necompletat'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-del-refuel]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openDeleteRefuelModal(btn.dataset.delRefuel));
+  });
+  list.querySelectorAll('[data-edit-refuel]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const r = state.refuels.find(x=>x.id===btn.dataset.editRefuel);
+      if(r) startEditRefuel(r);
+    });
+  });
+}
+
+let pendingDeleteRefuelId = null;
+function openDeleteRefuelModal(id){
+  pendingDeleteRefuelId = id;
+  const r = state.refuels.find(x=>x.id===id);
+  document.getElementById('deleteRefuelInfo').textContent = r
+    ? `${r.date}${r.time?' · '+r.time:''} · ${r.tip==='adblue'?'AdBlue':'Carburant'} · ${r.cantitate} L`
+    : '';
+  document.getElementById('deleteRefuelModal').classList.remove('hide');
+}
+function closeDeleteRefuelModal(){
+  pendingDeleteRefuelId = null;
+  document.getElementById('deleteRefuelModal').classList.add('hide');
+}
+document.getElementById('delRefuelCancelBtn').addEventListener('click', closeDeleteRefuelModal);
+document.getElementById('deleteRefuelModal').addEventListener('click', e=>{ if(e.target.id==='deleteRefuelModal') closeDeleteRefuelModal(); });
+document.getElementById('delRefuelConfirmBtn').addEventListener('click', ()=>{
+  const id = pendingDeleteRefuelId; if(!id) return;
+  state.refuels = state.refuels.filter(r=>r.id!==id);
+  if(editingRefuelId===id) cancelEditRefuel();
+  save();
+  renderRefuelList();
+  closeDeleteRefuelModal();
+});
+
+document.getElementById('f_date').value = todayStr();
+document.getElementById('f_date_end').value = todayStr();
+document.getElementById('f_date').addEventListener('change', e=>{
+  document.getElementById('f_date_end').value = e.target.value;
+});
+document.getElementById('r_date').value = todayStr();
+wireTimeField('r_time');
+
+function readTripForm(){
+  const dP = document.getElementById('f_date').value || todayStr();
+  return {
+    date: dP,
+    dateEnd: document.getElementById('f_date_end').value || dP,
+    timeStart: document.getElementById('f_time_start').value || '',
+    timeEnd: document.getElementById('f_time_end').value || '',
+    deliveredDate: document.getElementById('f_date_delivered').value || '',
+    deliveredTime: document.getElementById('f_time_delivered').value || '',
+    from: document.getElementById('f_from').value.trim(),
+    to: document.getElementById('f_to').value.trim(),
+    marfa: document.getElementById('f_marfa').value.trim(),
+    cantInc: +document.getElementById('f_cant_inc').value||0,
+    cant: +document.getElementById('f_cant').value||0,
+    kms: +document.getElementById('f_kms').value||0,
+    kme: +document.getElementById('f_kme').value||0,
+    ls: +document.getElementById('f_ls').value||0,
+    le: +document.getElementById('f_le').value||0,
+    tarif: +document.getElementById('f_tarif').value||0,
+    extra: +document.getElementById('f_extra').value||0,
+  };
+}
+
+function lastTripForActiveTruck(){
+  const truckTrips = state.trips.filter(t=>t.truckId===state.activeTruck);
+  if(truckTrips.length===0) return null;
+  let last = truckTrips[0];
+  truckTrips.forEach(t=>{ if(t.date > last.date) last = t; });
+  return last;
+}
+
+// Km bord și litri bord sunt citiri continue — pornesc mereu de unde s-a oprit cursa
+// anterioară a aceluiași camion. Prefill automat, dar rămân câmpuri editabile normal,
+// pentru cazul în care nu corespund cu bordul (realimentare, corecție, etc.).
+function prefillContinuity(){
+  const last = lastTripForActiveTruck();
+  document.getElementById('f_kms').value = last ? (last.kme ?? '') : '';
+  document.getElementById('f_ls').value = last ? (last.le ?? '') : '';
+}
+
+function resetTripForm(){
+  document.getElementById('tripForm').reset();
+  document.getElementById('f_date').value = todayStr();
+  document.getElementById('f_date_end').value = todayStr();
+  setTimeField('f_time_start', '');
+  setTimeField('f_time_end', '');
+  document.getElementById('f_date_delivered').value = '';
+  setTimeField('f_time_delivered', '');
+  updateWaitPreview();
+  document.getElementById('f_cant_inc').value = 0;
+  document.getElementById('f_cant').value = 0;
+  document.getElementById('f_tarif').value = 0;
+  document.getElementById('f_extra').value = 0;
+  updateCantDiffPreview();
+  prefillContinuity();
+  updateWaitPreview();
+  document.getElementById('deliveryGuardMsg').classList.add('hide');
+  updateDateOrderCheck();
+}
+
+function startEdit(trip){
+  editingTripId = trip.id;
+  document.getElementById('f_date').value = trip.date;
+  document.getElementById('f_date_end').value = trip.dateEnd || trip.date;
+  setTimeField('f_time_start', trip.timeStart || '');
+  setTimeField('f_time_end', trip.timeEnd || '');
+  document.getElementById('f_date_delivered').value = trip.deliveredDate || '';
+  setTimeField('f_time_delivered', trip.deliveredTime || '');
+  updateWaitPreview();
+  document.getElementById('f_from').value = trip.from||'';
+  document.getElementById('f_to').value = trip.to||'';
+  document.getElementById('f_marfa').value = trip.marfa||'';
+  document.getElementById('f_cant_inc').value = trip.cantInc||0;
+  document.getElementById('f_cant').value = trip.cant||0;
+  updateCantDiffPreview();
+  document.getElementById('f_kms').value = trip.kms||'';
+  document.getElementById('f_kme').value = trip.kme||'';
+  document.getElementById('f_ls').value = trip.ls||'';
+  document.getElementById('f_le').value = trip.le||'';
+  document.getElementById('f_tarif').value = trip.tarif||0;
+  document.getElementById('f_extra').value = trip.extra||0;
+  document.getElementById('deliveryGuardMsg').classList.add('hide');
+  updateDateOrderCheck();
+  document.getElementById('editBanner').classList.remove('hide');
+  document.getElementById('tripFormTitle').classList.add('hide');
+  document.getElementById('tripForm').classList.add('editing');
+  document.getElementById('tripSubmitBtn').textContent = 'Salvează modificările';
+  document.getElementById('tripForm').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function cancelEdit(){
+  editingTripId = null;
+  resetTripForm();
+  document.getElementById('editBanner').classList.add('hide');
+  document.getElementById('tripFormTitle').classList.remove('hide');
+  document.getElementById('tripForm').classList.remove('editing');
+  document.getElementById('tripSubmitBtn').textContent = 'Salvează cursa';
+}
+document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
+
+document.getElementById('continuaBtn').addEventListener('click', ()=>{
+  const last = lastTripForActiveTruck();
+  if(!last){
+    alert('Nu există încă nicio cursă înregistrată pentru acest camion, deci nu am de unde să preiau datele.');
+    return;
+  }
+  resetTripForm();
+  // Doar continuitatea de plecare — unde și cu ce bord ai ajuns ultima dată.
+  // Data de plecare se preia (ziua în care ai ajuns = ziua în care începe noua cursă),
+  // dar ora de plecare rămâne liberă — poți sta la încărcare 3-4 ore, ora reală se introduce manual.
+  // Sosire, marfă, cantitate, tarif rămân goale: e o cursă nouă, cu destinație nouă.
+  const startDate = last.dateEnd || last.date;
+  document.getElementById('f_date').value = startDate;
+  document.getElementById('f_date_end').value = startDate;
+  document.getElementById('f_from').value = last.to || '';
+  document.getElementById('f_kms').value = last.kme || '';
+  document.getElementById('f_ls').value = last.le || '';
+  updateDateOrderCheck();
+  document.getElementById('f_to').focus();
+});
+
+document.getElementById('returGolBtn').addEventListener('click', ()=>{
+  const truckTrips = state.trips.filter(t=>t.truckId===state.activeTruck);
+  if(truckTrips.length===0){
+    alert('Nu există încă nicio cursă înregistrată pentru acest camion, deci nu am de unde să preiau datele.');
+    return;
+  }
+  // ultima cursă = data cea mai recentă; la egalitate, cea adăugată ultima (unshift -> index mai mic = mai recentă)
+  let last = truckTrips[0];
+  truckTrips.forEach(t=>{ if(t.date > last.date) last = t; });
+
+  resetTripForm();
+  const startDate = last.dateEnd || last.date;
+  document.getElementById('f_date').value = startDate;
+  document.getElementById('f_date_end').value = startDate;
+  setTimeField('f_time_start', last.timeEnd || '');
+
+  // Plecare = acolo unde a ajuns cursa anterioară; Sosire = locația inițială de încărcare
+  // (ne întoarcem pe gol exact acolo de unde a plecat camionul)
+  document.getElementById('f_from').value = last.to || '';
+  document.getElementById('f_to').value = last.from || '';
+  document.getElementById('f_marfa').value = '';
+  document.getElementById('f_cant_inc').value = 0;
+  document.getElementById('f_cant').value = 0;
+  updateCantDiffPreview();
+
+  // Km bord plecare continuă de la bordul anterior
+  const kmsStart = last.kme || 0;
+  document.getElementById('f_kms').value = kmsStart || '';
+  // Distanța e aceeași rută, parcursă invers — o preluăm ca estimare pentru Km sosire
+  const distantaAnterioara = Math.max(0, (last.kme||0) - (last.kms||0));
+  document.getElementById('f_kme').value = distantaAnterioara ? (kmsStart + distantaAnterioara) : '';
+
+  // Litri bord plecare = litri bord sosire anterioară (continuitate reală de bord)
+  document.getElementById('f_ls').value = last.le || '';
+  // Litri bord sosire NU se preia — consumul pe gol e mai mic decât la dus, se introduce manual la retur
+  document.getElementById('f_le').value = '';
+
+  document.getElementById('f_tarif').value = 0;
+  document.getElementById('f_extra').value = 0;
+  updateDateOrderCheck();
+  document.getElementById('f_le').focus();
+});
+
+document.getElementById('returGolCancelBtn').addEventListener('click', ()=>{
+  resetTripForm();
+});
+
+document.getElementById('returPlinBtn').addEventListener('click', ()=>{
+  const truckTrips = state.trips.filter(t=>t.truckId===state.activeTruck);
+  if(truckTrips.length===0){
+    alert('Nu există încă nicio cursă înregistrată pentru acest camion, deci nu am de unde să preiau datele.');
+    return;
+  }
+  // continuitate (Km/Litri/dată plecare) = chiar ultima cursă a camionului, oricare ar fi ea
+  let lastTrip = truckTrips[0];
+  truckTrips.forEach(t=>{ if(t.date > lastTrip.date) lastTrip = t; });
+
+  // ruta/marfa/tarif/extra = ultima cursă ÎNCĂRCATĂ (nu un retur gol intermediar)
+  const loadedTrips = truckTrips.filter(t=>t.marfa && (t.cant||0)>0);
+  if(loadedTrips.length===0){
+    alert('Nu există încă nicio cursă încărcată (cu marfă) pentru acest camion, deci nu am de unde să preiau traseul/tariful.');
+    return;
+  }
+  let lastLoaded = loadedTrips[0];
+  loadedTrips.forEach(t=>{ if(t.date > lastLoaded.date) lastLoaded = t; });
+
+  resetTripForm();
+  const startDate = lastTrip.dateEnd || lastTrip.date;
+  document.getElementById('f_date').value = startDate;
+  document.getElementById('f_date_end').value = startDate;
+  setTimeField('f_time_start', lastTrip.timeEnd || '');
+
+  // Km/litri plecare — continuitate reală de bord, de la ultima cursă (poate fi returul gol)
+  document.getElementById('f_kms').value = lastTrip.kme || '';
+  document.getElementById('f_ls').value = lastTrip.le || '';
+  // Km sosire / litri sosire — NU se preiau, se completează la livrare efectivă
+  document.getElementById('f_kme').value = '';
+  document.getElementById('f_le').value = '';
+
+  // Rută, marfă, tarif, cost extra — identice cu ultima cursă încărcată, dar editabile
+  document.getElementById('f_from').value = lastLoaded.from || '';
+  document.getElementById('f_to').value = lastLoaded.to || '';
+  document.getElementById('f_marfa').value = lastLoaded.marfa || '';
+  document.getElementById('f_tarif').value = lastLoaded.tarif || 0;
+  document.getElementById('f_extra').value = lastLoaded.extra || 0;
+
+  // Cantitate — nu se preia, variază la fiecare încărcare
+  document.getElementById('f_cant_inc').value = 0;
+  document.getElementById('f_cant').value = 0;
+  updateCantDiffPreview();
+  updateDateOrderCheck();
+
+  document.getElementById('f_cant_inc').focus();
+});
+
+function deliveredTimeMissingMessage(data){
+  // Dacă ai marfă și ambele cantități completate, cursa e considerată livrată —
+  // nu poate fi salvată fără data/ora livrării efective.
+  if(!data.marfa) return '';
+  if(data.cantInc<=0 || data.cant<=0) return '';
+  if(data.deliveredDate && data.deliveredTime) return '';
+  return 'Ai marfă și cantitățile completate, deci cursa e livrată — completează data și ora livrării (sau apasă „Livrare efectuată — acum") înainte de a salva.';
+}
+
+document.getElementById('tripForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const orderMsg = updateDateOrderCheck();
+  if(orderMsg){
+    document.getElementById('dateOrderMsg').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  const data = readTripForm();
+  const missing = deliveredTimeMissingMessage(data);
+  if(missing){
+    const guardEl = document.getElementById('deliveryGuardMsg');
+    guardEl.textContent = missing;
+    guardEl.classList.remove('hide');
+    document.getElementById('f_date_delivered').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  if(editingTripId){
+    const idx = state.trips.findIndex(t=>t.id===editingTripId);
+    if(idx>-1) state.trips[idx] = {...state.trips[idx], ...data};
+    cancelEdit();
+  } else {
+    state.trips.unshift({ id: uid(), truckId: state.activeTruck, ...data });
+    resetTripForm();
+  }
+  save();
+  renderTripList();
+});
+
+function updateLocSuggestions(){
+  const set = new Set();
+  state.trips.forEach(t=>{
+    if(t.from) set.add(t.from.trim());
+    if(t.to) set.add(t.to.trim());
+  });
+  const dl = document.getElementById('locSuggestions');
+  dl.innerHTML = [...set].sort((a,b)=>a.localeCompare(b,'ro')).map(v=>`<option value="${escapeHtml(v)}"></option>`).join('');
+}
+
+function tripDateRangeLabel(trip){
+  const spans = trip.dateEnd && trip.dateEnd !== trip.date;
+  const startPart = trip.date + (trip.timeStart?' '+trip.timeStart:'');
+  if(!spans) return startPart + (trip.timeEnd?' → '+trip.timeEnd:'');
+  const endPart = trip.dateEnd + (trip.timeEnd?' '+trip.timeEnd:'');
+  return startPart + ' → ' + endPart;
+}
+
+function renderTripList(){
+  updateLocSuggestions();
+  const list = document.getElementById('tripList');
+  const truck = state.trucks.find(t=>t.id===state.activeTruck);
+  const trips = state.trips.filter(t=>t.truckId===state.activeTruck).sort((a,b)=> b.date.localeCompare(a.date));
+  if(!truck){ list.innerHTML=''; return; }
+  if(trips.length===0){
+    list.innerHTML = `<div class="empty-state"><div class="ic">🧾</div>Nicio cursă înregistrată încă pentru ${escapeHtml(truck.name)}.</div>`;
+    return;
+  }
+  list.innerHTML = trips.map(trip=>{
+    const c = tripCalc(trip, truck);
+    const km = Math.max(0,(trip.kme||0)-(trip.kms||0));
+    const diffKg = qtyDiffKg(trip);
+    const showQty = (trip.cantInc||0)>0 || (trip.cant||0)>0;
+    const diffInfo = showQty ? qtyDiffLabel(diffKg, false) : '';
+    const diffTag = diffInfo ? `<span class="empty-tag" style="background:${diffInfo.color==='var(--bad)'?'var(--bad-bg)':diffInfo.color==='var(--good)'?'var(--good-bg)':'var(--line)'};color:${diffInfo.color}">${diffInfo.text}</span>` : '';
+    const wh = waitHours(trip);
+    const waitTag = wh!==null ? `<span class="empty-tag" style="background:${wh>PRAG_ASTEPTARE_H?'var(--bad-bg)':'var(--line)'};color:${wh>PRAG_ASTEPTARE_H?'var(--bad)':'var(--steel-dim)'}">⏱ ${wh.toFixed(1)} h așteptare</span>` : '';
+    return `<div class="trip">
+      <div>
+        <div class="route">${escapeHtml(trip.from||'—')} → ${escapeHtml(trip.to||'—')}${c.isEmpty?'<span class="empty-tag">cursă goală</span>':''}${waitTag}</div>
+        <div class="meta">${tripDateRangeLabel(trip)} · ${trip.marfa?escapeHtml(trip.marfa)+' · ':''}${km?km+' km · ':''}${(trip.le-trip.ls>0)?(trip.le-trip.ls).toFixed(0)+' L':''}</div>
+        ${showQty?`<div class="meta">${(trip.cantInc||0)} t înc. → ${(trip.cant||0)} t desc. ${diffTag}</div>`:''}
+      </div>
+      <div class="trip-right">
+        <div class="trip-actions">
+          <button class="view" data-view-trip="${trip.id}" title="Vezi detalii" aria-label="Vezi detalii">👁</button>
+          <button class="edit" data-edit-trip="${trip.id}" title="Editează cursa" aria-label="Editează cursa">✎</button>
+          <button class="del" data-del-trip="${trip.id}" title="Șterge cursa" aria-label="Șterge cursa">✕</button>
+        </div>
+        <div class="num ${c.marja>=0?'pos':'neg'}">
+          <div class="big">${c.marja>=0?'+':''}${RON(c.marja)}</div>
+          <div class="lbl">marjă (fără cost fix)</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-del-trip]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openDeleteTripModal(btn.dataset.delTrip));
+  });
+  list.querySelectorAll('[data-edit-trip]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const trip = state.trips.find(t=>t.id===btn.dataset.editTrip);
+      if(trip) startEdit(trip);
+    });
+  });
+  list.querySelectorAll('[data-view-trip]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const trip = state.trips.find(t=>t.id===btn.dataset.viewTrip);
+      if(trip) viewTrip(trip);
+    });
+  });
+}
+
+function viewTrip(trip){
+  const truck = state.trucks.find(t=>t.id===trip.truckId);
+  const c = tripCalc(trip, truck);
+  const km = Math.max(0,(trip.kme||0)-(trip.kms||0));
+  const litri = Math.max(0,(trip.le||0)-(trip.ls||0));
+  const diffKg = qtyDiffKg(trip);
+  const rows = [
+    ['Camion', truck ? truck.name : '—'],
+    ['Data/ora plecare', trip.date + (trip.timeStart?' · '+trip.timeStart:'')],
+    ['Plecare', trip.from||'—'],
+    ['Data/ora sosire', (trip.dateEnd||trip.date) + (trip.timeEnd?' · '+trip.timeEnd:'')],
+    ['Sosire', trip.to||'—'],
+    ['Livrare efectuată', (trip.deliveredDate&&trip.deliveredTime) ? (trip.deliveredDate+' · '+trip.deliveredTime) : '— neconsemnată'],
+    ['Timp așteptare descărcare', waitHours(trip)!==null ? waitHours(trip).toFixed(1)+' h' : '—'],
+    ['Marfă', trip.marfa||'— (cursă goală)'],
+  ];
+  const rows2 = [
+    ['Km bord plecare', trip.kms||0],
+    ['Km bord sosire', trip.kme||0],
+    ['Distanță', km+' km'],
+    ['Litri bord plecare', trip.ls||0],
+    ['Litri bord sosire', trip.le||0],
+    ['Consum cursă', litri.toFixed(1)+' L'],
+  ];
+  const rows3 = [
+    ['Cantitate încărcată', (trip.cantInc||0)+' t'],
+    ['Cantitate descărcată', (trip.cant||0)+' t'],
+    ['Diferență', (diffKg===0?'0':(diffKg>0?'−':'+')+Math.abs(diffKg))+' kg'],
+  ];
+  const rows4 = [
+    ['Tarif / tonă', RON(trip.tarif||0)],
+    ['Total facturat', RON(c.facturat)],
+    ['Cost combustibil', '− '+RON(c.costCarburant)],
+    ['Taxă drum (TollRo, estimat)', '− '+RON(c.costTollRo)],
+    ['Costuri extra (taxe port, spălare...)', '− '+RON(trip.extra||0)],
+    ['Marjă (fără cost fix)', (c.marja>=0?'+':'')+RON(c.marja)],
+  ];
+  const sect = (title, rows, boldLast)=> `<div class="modal-section-title">${title}</div>` +
+    rows.map(([l,v],i)=>`<div class="modal-row"${(boldLast&&i===rows.length-1)?' style="font-weight:700"':''}><span>${l}</span><span>${v}</span></div>`).join('');
+
+  document.getElementById('modalBody').innerHTML =
+    sect('Traseu', rows) + sect('Kilometraj & combustibil', rows2) + sect('Cantitate', rows3) + sect('Financiar', rows4, true);
+  document.getElementById('viewModal').classList.remove('hide');
+}
+function closeViewModal(){ document.getElementById('viewModal').classList.add('hide'); }
+
+// ---------- SAPTAMANA ----------
+function periodTrips(days){
+  if(days>=9999) return state.trips;
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-days);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  return state.trips.filter(t=>t.date >= cutoffStr);
+}
+function periodRefuels(days){
+  if(days>=9999) return state.refuels;
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-days);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  return state.refuels.filter(r=>r.date >= cutoffStr);
+}
+function refuelTotalsForTruck(truckId, refuels){
+  const own = refuels.filter(r=>r.truckId===truckId);
+  const carburant = own.filter(r=>r.tip==='carburant');
+  const adblue = own.filter(r=>r.tip==='adblue');
+  const sumL = arr => arr.reduce((s,r)=>s+(r.cantitate||0),0);
+  const sumCost = arr => arr.reduce((s,r)=> s + (r.pret>0 ? r.cantitate*r.pret : 0), 0);
+  return {
+    litriCarburant: sumL(carburant), costCarburant: sumCost(carburant),
+    litriAdblue: sumL(adblue), costAdblue: sumCost(adblue),
+  };
+}
+
+document.getElementById('periodSel').addEventListener('change', renderSummary);
+
+function statsForTruck(truck, trips){
+  const own = trips.filter(t=>t.truckId===truck.id);
+  let facturat=0, extra=0, carburant=0, tollRo=0, km=0, tone=0, diffKgTotal=0, waitSum=0, waitCount=0, waitOverCount=0;
+  let kmPlin=0, litriPlin=0, kmGol=0, litriGol=0, nrIncomplete=0;
+  const days = new Set();
+  own.forEach(trip=>{
+    const c = tripCalc(trip, truck);
+    facturat += c.facturat; extra += trip.extra||0; carburant += c.costCarburant; tollRo += c.costTollRo;
+    const kmTrip = Math.max(0,(trip.kme||0)-(trip.kms||0));
+    const litriTrip = Math.max(0,(trip.le||0)-(trip.ls||0));
+    km += kmTrip;
+    tone += trip.cant||0;
+    diffKgTotal += qtyDiffKg(trip);
+    days.add(trip.date);
+    const wh = waitHours(trip);
+    if(wh!==null){ waitSum += wh; waitCount++; if(wh>PRAG_ASTEPTARE_H) waitOverCount++; }
+    // excludem din medie cursele cu date incomplete (km=0 dar litri>0, sau invers) —
+    // altfel o cursă fără Km sosire completat ar umfla artificial media de consum
+    // cursă "completă" pentru calculul de consum = are și km și litri > 0;
+    // dacă are doar una dintre ele (cealaltă necompletată), o excludem și o semnalăm separat
+    const hasKm = kmTrip>0, hasLitri = litriTrip>0;
+    if(hasKm && hasLitri){
+      if(c.isEmpty){ kmGol += kmTrip; litriGol += litriTrip; }
+      else { kmPlin += kmTrip; litriPlin += litriTrip; }
+    } else if(hasKm !== hasLitri){
+      nrIncomplete++;
+    }
+  });
+  const costFix = days.size * fixedPerDay(truck);
+  const profitNet = facturat - extra - carburant - tollRo - costFix;
+  const waitAvg = waitCount>0 ? waitSum/waitCount : null;
+  const consumPlin = kmPlin>0 ? litriPlin/kmPlin*100 : null;
+  const consumGol = kmGol>0 ? litriGol/kmGol*100 : null;
+  const consumTotal = km>0 ? (litriPlin+litriGol)/km*100 : null;
+  const pctKmGol = km>0 ? kmGol/km*100 : null;
+  return {facturat, extra, carburant, tollRo, costFix, profitNet, km, tone, diffKgTotal, waitAvg, waitCount, waitOverCount,
+    kmPlin, kmGol, consumPlin, consumGol, consumTotal, pctKmGol, nrIncomplete, zileLucrate:days.size, nrCurse:own.length};
+}
+
+function routeStats(trips){
+  const byRoute = {};
+  trips.filter(t=> t.marfa && (t.cant||0)>0 && t.from && t.to).forEach(trip=>{
+    const key = (trip.from.trim()+' → '+trip.to.trim()).toLowerCase();
+    if(!byRoute[key]) byRoute[key] = {label: trip.from.trim()+' → '+trip.to.trim(), nrCurse:0, tone:0, km:0, facturat:0, extra:0, carburant:0, tollRo:0};
+    const truck = state.trucks.find(t=>t.id===trip.truckId);
+    const c = tripCalc(trip, truck);
+    const r = byRoute[key];
+    r.nrCurse++; r.tone += trip.cant||0;
+    r.km += Math.max(0,(trip.kme||0)-(trip.kms||0));
+    r.facturat += c.facturat; r.extra += trip.extra||0; r.carburant += c.costCarburant; r.tollRo += c.costTollRo;
+  });
+  return Object.values(byRoute).map(r=>{
+    const marja = r.facturat - r.extra - r.carburant - r.tollRo;
+    return {...r, marja, marjaPerTona: r.tone>0?marja/r.tone:null, marjaPerKm: r.km>0?marja/r.km:null, marjaPerCursa: marja/r.nrCurse};
+  }).sort((a,b)=> b.marja - a.marja);
+}
+
+function statsByDay(truck, trips){
+  const own = trips.filter(t=>t.truckId===truck.id);
+  const byDay = {};
+  own.forEach(trip=>{
+    const c = tripCalc(trip, truck);
+    if(!byDay[trip.date]) byDay[trip.date] = {facturat:0, extra:0, carburant:0, tollRo:0, nrCurse:0};
+    const d = byDay[trip.date];
+    d.facturat += c.facturat; d.extra += trip.extra||0; d.carburant += c.costCarburant; d.tollRo += c.costTollRo; d.nrCurse += 1;
+  });
+  const fix = fixedPerDay(truck);
+  return Object.keys(byDay).sort((a,b)=>b.localeCompare(a)).map(date=>{
+    const d = byDay[date];
+    const profit = d.facturat - d.extra - d.carburant - d.tollRo - fix;
+    return {date, ...d, costFix:fix, profit};
+  });
+}
+
+const CONSUM_MIN_PLAUZIBIL = 10; // L/100km — sub asta, aproape sigur o cifră greșită la km sau litri
+const CONSUM_MAX_PLAUZIBIL = 70; // L/100km — peste asta, la fel
+
+// Km bord și litri bord sunt citiri cumulative — cresc mereu, pentru același camion, în ordine cronologică.
+// O scădere sau o lipsă de date pe oricare dintre ele e semn clar de greșeală de tastare.
+function findDataIssues(){
+  const issues = [];
+  state.trucks.forEach(truck=>{
+    const tt = state.trips.filter(t=>t.truckId===truck.id)
+      .slice()
+      .sort((a,b)=> (a.date+'T'+(a.timeStart||'00:00')).localeCompare(b.date+'T'+(b.timeStart||'00:00')));
+    tt.forEach((trip,i)=>{
+      const hasKms=(trip.kms||0)>0, hasKme=(trip.kme||0)>0, hasLs=(trip.ls||0)>0, hasLe=(trip.le||0)>0;
+      if(hasKms && hasKme && trip.kme < trip.kms) issues.push({truck, trip, msg:`Km sosire (${trip.kme}) mai mic decât Km plecare (${trip.kms}) — valoare imposibilă`});
+      if(hasLs && hasLe && trip.le < trip.ls) issues.push({truck, trip, msg:`Litri sosire (${trip.le}) mai mici decât Litri plecare (${trip.ls}) — valoare imposibilă`});
+      if((hasKms||hasKme) && hasKms!==hasKme) issues.push({truck, trip, msg: hasKms?'Lipsă Km bord — sosire':'Lipsă Km bord — plecare'});
+      if((hasLs||hasLe) && hasLs!==hasLe) issues.push({truck, trip, msg: hasLs?'Lipsă Litri bord — sosire':'Lipsă Litri bord — plecare'});
+      const prev = tt[i-1];
+      if(prev){
+        if((prev.kme||0)>0 && hasKms && trip.kms < prev.kme) issues.push({truck, trip, msg:`Km plecare (${trip.kms}) mai mic decât Km sosire al cursei anterioare (${prev.kme})`});
+        if((prev.le||0)>0 && hasLs && trip.ls < prev.le) issues.push({truck, trip, msg:`Litri plecare (${trip.ls}) mai mici decât Litri sosire ai cursei anterioare (${prev.le})`});
+      }
+      // consum neplauzibil — prinde și cazul în care nu e o scădere, dar o cifră e greșită
+      // (ex. o cifră lipsă/transpusă la km SAU la litri), chiar dacă valorile cresc tot timpul
+      const kmTrip = Math.max(0,(trip.kme||0)-(trip.kms||0));
+      const litriTrip = Math.max(0,(trip.le||0)-(trip.ls||0));
+      if(kmTrip>0 && litriTrip>0){
+        const consum = litriTrip/kmTrip*100;
+        if(consum < CONSUM_MIN_PLAUZIBIL || consum > CONSUM_MAX_PLAUZIBIL){
+          issues.push({truck, trip, msg:`Consum neobișnuit: ${consum.toFixed(1)} L/100km (${litriTrip.toFixed(0)} L la ${kmTrip} km) — verifică Km sau Litri bord`});
+        }
+      }
+    });
+  });
+  return issues;
+}
+
+function jumpToTripEdit(truckId, tripId){
+  state.activeTruck = truckId; save();
+  document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));
+  document.querySelector('nav.tabs button[data-tab="curse"]').classList.add('active');
+  ['curse','saptamana','flota','alimentari'].forEach(t=> document.getElementById('tab-'+t).classList.toggle('hide', t!=='curse'));
+  renderAll();
+  const trip = state.trips.find(t=>t.id===tripId);
+  if(trip) startEdit(trip);
+}
+
+function renderSummary(){
+  const days = +document.getElementById('periodSel').value;
+  const trips = periodTrips(days);
+  const refuels = periodRefuels(days);
+  const fleetWrap = document.getElementById('fleetSummary');
+  const perTruckWrap = document.getElementById('perTruckSummary');
+
+  if(state.trucks.length===0){
+    fleetWrap.innerHTML = `<div class="card"><div class="empty-state"><div class="ic">📊</div>Adaugă un camion și câteva curse ca să vezi raportul.</div></div>`;
+    perTruckWrap.innerHTML=''; return;
+  }
+
+  let tot = {facturat:0, extra:0, carburant:0, tollRo:0, costFix:0, profitNet:0, km:0, kmPlin:0, kmGol:0, nrIncomplete:0};
+  let litriPlinTot=0, litriGolTot=0;
+  const perTruck = state.trucks.map(t=>({truck:t, s:statsForTruck(t, trips)}));
+  perTruck.forEach(({s})=>{
+    tot.facturat+=s.facturat; tot.extra+=s.extra; tot.carburant+=s.carburant; tot.tollRo+=s.tollRo;
+    tot.costFix+=s.costFix; tot.profitNet+=s.profitNet; tot.km+=s.km; tot.kmPlin+=s.kmPlin; tot.kmGol+=s.kmGol;
+    tot.nrIncomplete += s.nrIncomplete;
+    if(s.consumPlin!==null) litriPlinTot += s.kmPlin*s.consumPlin/100;
+    if(s.consumGol!==null) litriGolTot += s.kmGol*s.consumGol/100;
+  });
+  const fleetConsumPlin = tot.kmPlin>0 ? litriPlinTot/tot.kmPlin*100 : null;
+  const fleetConsumGol = tot.kmGol>0 ? litriGolTot/tot.kmGol*100 : null;
+  const fleetConsumTotal = tot.km>0 ? (litriPlinTot+litriGolTot)/tot.km*100 : null;
+  const fleetPctGol = tot.km>0 ? tot.kmGol/tot.km*100 : null;
+  const routes = routeStats(trips);
+  const issues = findDataIssues();
+
+  fleetWrap.innerHTML = `
+    ${issues.length>0?`<div class="card" style="border-color:var(--bad)">
+      <h3 style="color:var(--bad)">⚠ ${issues.length} ${issues.length===1?'problemă detectată':'probleme detectate'} la citirile de bord</h3>
+      <div class="breakdown">
+        ${issues.map(it=>`<div data-issue-trip="${it.trip.id}" data-issue-truck="${it.truck.id}" style="cursor:pointer; flex-direction:column; align-items:flex-start; gap:2px;">
+          <span style="font-size:12px;color:var(--steel-dim)">${escapeHtml(it.truck.name)} · ${it.trip.date} · ${escapeHtml(it.trip.from||'—')} → ${escapeHtml(it.trip.to||'—')}</span>
+          <span style="color:var(--bad);font-weight:600;font-size:13px">${it.msg}</span>
+        </div>`).join('')}
+      </div>
+      <p style="font-size:11.5px;color:var(--steel-dim);margin:8px 0 0">Apasă pe o problemă ca s-o corectezi direct în cursă.</p>
+    </div>`:''}
+    <div class="kpi-row">
+      <div class="kpi"><div class="v mono">${RON(tot.facturat)}</div><div class="l">Total facturat, flotă</div></div>
+      <div class="kpi ${tot.profitNet>=0?'good':'bad'}"><div class="v mono">${RON(tot.profitNet)}</div><div class="l">Profit net, flotă</div></div>
+    </div>
+    <div class="card">
+      <h3>Structura costurilor — flotă</h3>
+      <div class="breakdown">
+        <div><span>Total facturat</span><span class="mono">${RON(tot.facturat)}</span></div>
+        <div><span>Combustibil</span><span class="mono neg">− ${RON(tot.carburant)}</span></div>
+        <div><span>Taxă drum (TollRo, estimat)</span><span class="mono neg">− ${RON(tot.tollRo)}</span></div>
+        <div><span>Costuri extra (taxe port, spălare...)</span><span class="mono neg">− ${RON(tot.extra)}</span></div>
+        <div><span>Costuri fixe alocate (leasing, salarii...)</span><span class="mono neg">− ${RON(tot.costFix)}</span></div>
+        <div><span><strong>Profit net</strong></span><span class="mono"><strong>${RON(tot.profitNet)}</strong></span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Consum motorină — mediu flotă (L/100km)</h3>
+      <div class="breakdown">
+        <div><span>La plin (curse cu marfă)</span><span class="mono">${fleetConsumPlin!==null?fleetConsumPlin.toFixed(1)+' L/100km':'—'}</span></div>
+        <div><span>Pe gol (poziționare/retur)</span><span class="mono">${fleetConsumGol!==null?fleetConsumGol.toFixed(1)+' L/100km':'—'}</span></div>
+        <div><span><strong>Total combinat</strong></span><span class="mono"><strong>${fleetConsumTotal!==null?fleetConsumTotal.toFixed(1)+' L/100km':'—'}</strong></span></div>
+        <div><span>Km parcurși pe gol din total</span><span class="mono" style="color:${fleetPctGol!==null&&fleetPctGol>35?'var(--bad)':'var(--steel-dim)'}">${fleetPctGol!==null?fleetPctGol.toFixed(0)+'%':'—'}</span></div>
+      </div>
+      ${tot.nrIncomplete>0?`<p style="font-size:12px;color:var(--amber);margin:10px 0 0">⚠ ${tot.nrIncomplete} ${tot.nrIncomplete===1?'cursă are':'curse au'} doar Km sau doar Litri bord completate (nu ambele) — excluse din medie. Verifică-le în „Curse".</p>`:''}
+    </div>
+    ${routes.length>0?`<div class="card">
+      <h3>Marjă pe rută <span style="font-weight:400;color:var(--steel-dim)">(doar curse încărcate, cost fix neinclus)</span></h3>
+      <div class="breakdown">
+        ${routes.map(r=>`
+          <div><span>${escapeHtml(r.label)} <span class="mono" style="font-size:11px;color:var(--steel-dim)">(${r.nrCurse}×, ${r.tone.toFixed(0)}t)</span></span><span class="mono" style="color:${r.marja>=0?'var(--good)':'var(--bad)'};font-weight:600">${r.marja>=0?'+':''}${RON(r.marja)}</span></div>
+        `).join('')}
+      </div>
+    </div>`:''}`;
+
+  fleetWrap.querySelectorAll('[data-issue-trip]').forEach(row=>{
+    row.addEventListener('click', ()=> jumpToTripEdit(row.dataset.issueTruck, row.dataset.issueTrip));
+  });
+
+  perTruckWrap.innerHTML = '<h3 style="margin:16px 2px 8px;font-size:13px;color:var(--steel)">Pe camion</h3>' +
+    perTruck.map(({truck,s})=>{
+      const rf = refuelTotalsForTruck(truck.id, refuels);
+      return `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <strong>${escapeHtml(truck.name)}</strong>
+          <span class="mono ${s.profitNet>=0?'':''}" style="color:${s.profitNet>=0?'var(--good)':'var(--bad)'};font-weight:700">${RON(s.profitNet)}</span>
+        </div>
+        <div class="breakdown">
+          <div><span>Curse înregistrate</span><span class="mono">${s.nrCurse} (${s.zileLucrate} zile lucrate)</span></div>
+          <div><span>Km parcurși</span><span class="mono">${s.km.toFixed(0)} km</span></div>
+          <div><span>Facturat</span><span class="mono">${RON(s.facturat)}</span></div>
+          <div><span>Combustibil</span><span class="mono neg">− ${RON(s.carburant)}</span></div>
+          <div><span>Taxă drum (TollRo, estimat)</span><span class="mono neg">− ${RON(s.tollRo)}</span></div>
+          <div><span>Extra</span><span class="mono neg">− ${RON(s.extra)}</span></div>
+          <div><span>Cost fix alocat</span><span class="mono neg">− ${RON(s.costFix)}</span></div>
+          <div><span>Profit / km</span><span class="mono">${s.km>0?RON2(s.profitNet/s.km):'—'} RON</span></div>
+          <div><span>Diferență livrare <span style="font-size:11px;color:var(--steel-dim)">(sumă lipsă/surplus pe toate livrările)</span></span><span class="mono" style="color:${qtyDiffColor(s.diffKgTotal)}">${s.diffKgTotal===0?'0':(s.diffKgTotal>0?'−':'+')+Math.abs(s.diffKgTotal)} kg</span></div>
+          ${s.waitAvg!==null?`<div><span>Așteptare medie la descărcare (${s.waitCount} curse)</span><span class="mono" style="color:${s.waitOverCount>0?'var(--bad)':'var(--steel-dim)'}">${s.waitAvg.toFixed(1)} h${s.waitOverCount>0?` · ${s.waitOverCount} peste ${PRAG_ASTEPTARE_H}h`:''}</span></div>`:''}
+        </div>
+        <div class="modal-section-title" style="margin:12px 0 2px">Consum &amp; utilizare</div>
+        <div class="breakdown">
+          <div><span>Consum la plin</span><span class="mono">${s.consumPlin!==null?s.consumPlin.toFixed(1)+' L/100km':'—'}</span></div>
+          <div><span>Consum pe gol</span><span class="mono">${s.consumGol!==null?s.consumGol.toFixed(1)+' L/100km':'—'}</span></div>
+          <div><span>Consum combinat</span><span class="mono">${s.consumTotal!==null?s.consumTotal.toFixed(1)+' L/100km':'—'}</span></div>
+          <div><span>Km pe gol din total</span><span class="mono" style="color:${s.pctKmGol!==null&&s.pctKmGol>35?'var(--bad)':'var(--steel-dim)'}">${s.pctKmGol!==null?s.pctKmGol.toFixed(0)+'%':'—'}</span></div>
+        </div>
+        ${s.nrIncomplete>0?`<p style="font-size:11.5px;color:var(--amber);margin:6px 0 0">⚠ ${s.nrIncomplete} ${s.nrIncomplete===1?'cursă are':'curse au'} doar Km sau doar Litri bord completate — excluse din medie.</p>`:''}
+        ${s.nrCurse>0?`<details style="margin-top:10px">
+          <summary style="cursor:pointer;font-size:12.5px;color:var(--steel-dim)">Vezi profitul pe fiecare zi (${statsByDay(truck, trips).length} zile)</summary>
+          <div class="breakdown" style="margin-top:8px">
+            ${statsByDay(truck, trips).map(d=>`
+              <div><span>${d.date} · ${d.nrCurse} ${d.nrCurse===1?'cursă':'curse'}</span><span class="mono" style="color:${d.profit>=0?'var(--good)':'var(--bad)'};font-weight:600">${d.profit>=0?'+':''}${RON(d.profit)}</span></div>
+            `).join('')}
+          </div>
+        </details>`:''}
+        ${(rf.litriCarburant>0 || rf.litriAdblue>0)?`
+        <div class="modal-section-title" style="margin:12px 0 2px">Alimentări (date reale din jurnal)</div>
+        <div class="breakdown">
+          ${rf.litriCarburant>0?`<div><span>⛽ Carburant alimentat</span><span class="mono">${rf.litriCarburant.toFixed(0)} L${rf.costCarburant>0?' · '+RON(rf.costCarburant):''}</span></div>`:''}
+          ${rf.litriAdblue>0?`<div><span>💧 AdBlue alimentat</span><span class="mono">${rf.litriAdblue.toFixed(0)} L${rf.costAdblue>0?' · '+RON(rf.costAdblue):''}</span></div>`:''}
+        </div>`:''}
+      </div>`;
+    }).join('');
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function renderAll(){
+  renderTruckChips();
+  renderTripList();
+  renderRefuelTruckChips();
+  renderRefuelList();
+}
+
+document.getElementById('modalCloseBtn').addEventListener('click', closeViewModal);
+document.getElementById('viewModal').addEventListener('click', e=>{ if(e.target.id==='viewModal') closeViewModal(); });
+
+let pendingDeleteTripId = null;
+function openDeleteTripModal(id){
+  pendingDeleteTripId = id;
+  const trip = state.trips.find(t=>t.id===id);
+  document.getElementById('deleteTripInfo').textContent = trip
+    ? `${trip.date} · ${escapeHtml(trip.from||'—')} → ${escapeHtml(trip.to||'—')}`
+    : '';
+  document.getElementById('deleteTripModal').classList.remove('hide');
+}
+function closeDeleteTripModal(){
+  pendingDeleteTripId = null;
+  document.getElementById('deleteTripModal').classList.add('hide');
+}
+document.getElementById('delTripCancelBtn').addEventListener('click', closeDeleteTripModal);
+document.getElementById('deleteTripModal').addEventListener('click', e=>{ if(e.target.id==='deleteTripModal') closeDeleteTripModal(); });
+document.getElementById('delTripConfirmBtn').addEventListener('click', ()=>{
+  const id = pendingDeleteTripId; if(!id) return;
+  state.trips = state.trips.filter(t=>t.id!==id);
+  if(editingTripId===id) cancelEdit();
+  save();
+  renderTripList();
+  closeDeleteTripModal();
+});
+
+let pendingDeleteTruckId = null;
+function openDeleteTruckModal(id){
+  pendingDeleteTruckId = id;
+  const t = state.trucks.find(x=>x.id===id);
+  const nrTrips = state.trips.filter(tr=>tr.truckId===id).length;
+  document.getElementById('deleteTruckName').textContent =
+    `„${t?t.name:''}" — ${nrTrips} ${nrTrips===1?'cursă înregistrată':'curse înregistrate'}.`;
+  document.getElementById('deleteTruckModal').classList.remove('hide');
+}
+function closeDeleteTruckModal(){
+  pendingDeleteTruckId = null;
+  document.getElementById('deleteTruckModal').classList.add('hide');
+}
+document.getElementById('delTruckCancelBtn').addEventListener('click', closeDeleteTruckModal);
+document.getElementById('deleteTruckModal').addEventListener('click', e=>{ if(e.target.id==='deleteTruckModal') closeDeleteTruckModal(); });
+
+document.getElementById('delTruckOnlyBtn').addEventListener('click', ()=>{
+  const id = pendingDeleteTruckId; if(!id) return;
+  state.trucks = state.trucks.filter(t=>t.id!==id);
+  // cursele rămân salvate, doar camionul dispare din flotă
+  if(state.activeTruck===id) state.activeTruck = state.trucks[0]?.id || null;
+  if(editingTruckId===id) cancelEditTruck();
+  save(); renderAll(); renderTruckManage(); closeDeleteTruckModal();
+});
+document.getElementById('delTruckAndTripsBtn').addEventListener('click', ()=>{
+  const id = pendingDeleteTruckId; if(!id) return;
+  state.trucks = state.trucks.filter(t=>t.id!==id);
+  state.trips = state.trips.filter(tr=>tr.truckId!==id);
+  state.refuels = state.refuels.filter(r=>r.truckId!==id);
+  if(state.activeTruck===id) state.activeTruck = state.trucks[0]?.id || null;
+  if(editingTruckId===id) cancelEditTruck();
+  save(); renderAll(); renderTruckManage(); closeDeleteTruckModal();
+});
+
+// ---------- EXPORT (Excel / PDF) ----------
+async function getDownloadsCapability(){
+  try{
+    if(typeof claude==='undefined' || !claude.use) return null;
+    return await claude.use('downloads');
+  }catch(e){ return null; }
+}
+
+function periodLabel(days){
+  return days>=9999 ? 'tot istoricul' : `ultimele ${days} zile`;
+}
+
+function buildExportData(days){
+  const trips = periodTrips(days);
+  const perTruck = state.trucks.map(t=>({truck:t, s:statsForTruck(t, trips)}));
+  const tripRows = trips
+    .slice()
+    .sort((a,b)=> a.date.localeCompare(b.date))
+    .map(trip=>{
+      const truck = state.trucks.find(t=>t.id===trip.truckId);
+      const c = tripCalc(trip, truck);
+      const km = Math.max(0,(trip.kme||0)-(trip.kms||0));
+      const litri = Math.max(0,(trip.le||0)-(trip.ls||0));
+      const wh = waitHours(trip);
+      return {
+        camion: truck?truck.name:'—',
+        dataPlecare: trip.date, oraPlecare: trip.timeStart||'',
+        plecare: trip.from||'', dataSosire: trip.dateEnd||trip.date, oraSosire: trip.timeEnd||'',
+        sosire: trip.to||'', marfa: trip.marfa||'(gol)',
+        cantInc: trip.cantInc||0, cantDesc: trip.cant||0, diferentaKg: qtyDiffKg(trip),
+        km, litri: +litri.toFixed(1),
+        tarif: trip.tarif||0, facturat: +c.facturat.toFixed(2),
+        combustibil: +c.costCarburant.toFixed(2), tollRo: +c.costTollRo.toFixed(2),
+        extra: trip.extra||0, marja: +c.marja.toFixed(2),
+        livrare: (trip.deliveredDate&&trip.deliveredTime)?(trip.deliveredDate+' '+trip.deliveredTime):'',
+        asteptareH: wh!==null ? +wh.toFixed(1) : '',
+      };
+    });
+  return {trips, perTruck, tripRows};
+}
+
+document.getElementById('exportExcelBtn').addEventListener('click', async ()=>{
+  const downloads = await getDownloadsCapability();
+  if(!downloads){ alert('Exportul de fișiere nu e disponibil în acest mod de vizualizare a paginii.'); return; }
+  const days = +document.getElementById('periodSel').value;
+  const {perTruck, tripRows} = buildExportData(days);
+
+  const summaryAOA = [
+    ['Raport flotă — '+periodLabel(days)],
+    [],
+    ['Camion','Curse','Zile lucrate','Facturat','Combustibil','Taxă drum (TollRo)','Extra','Cost fix alocat','Profit net','Profit/km','Profit/tonă'],
+    ...perTruck.map(({truck,s})=>[
+      truck.name, s.nrCurse, s.zileLucrate,
+      +s.facturat.toFixed(2), +s.carburant.toFixed(2), +s.tollRo.toFixed(2), +s.extra.toFixed(2), +s.costFix.toFixed(2),
+      +s.profitNet.toFixed(2),
+      s.km>0?+(s.profitNet/s.km).toFixed(2):'', s.tone>0?+(s.profitNet/s.tone).toFixed(2):'',
+    ]),
+  ];
+
+  const tripAOA = [
+    ['Camion','Data plecare','Ora plecare','Plecare','Data sosire','Ora sosire','Sosire','Marfă',
+     'Cant. încărcată (t)','Cant. descărcată (t)','Diferență (kg)','Km','Litri','Tarif/to','Facturat',
+     'Combustibil','Taxă drum TollRo','Extra','Marjă','Livrare efectuată','Așteptare (h)'],
+    ...tripRows.map(r=>[
+      r.camion, r.dataPlecare, r.oraPlecare, r.plecare, r.dataSosire, r.oraSosire, r.sosire, r.marfa,
+      r.cantInc, r.cantDesc, r.diferentaKg, r.km, r.litri, r.tarif, r.facturat,
+      r.combustibil, r.tollRo, r.extra, r.marja, r.livrare, r.asteptareH,
+    ]),
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryAOA), 'Rezumat flotă');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tripAOA), 'Curse');
+  const out = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  const blob = new Blob([out], {type:'application/octet-stream'});
+
+  try{
+    await downloads.save({filename:`raport_${todayStr()}.xlsx`, data: blob});
+  }catch(err){
+    if(err && err.code!=='declined') alert('Exportul Excel a eșuat: '+(err&&err.message||'eroare necunoscută'));
+  }
+});
+
+document.getElementById('exportPdfBtn').addEventListener('click', async ()=>{
+  const downloads = await getDownloadsCapability();
+  if(!downloads){ alert('Exportul de fișiere nu e disponibil în acest mod de vizualizare a paginii.'); return; }
+  const days = +document.getElementById('periodSel').value;
+  const {perTruck, tripRows} = buildExportData(days);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape'});
+  doc.setFontSize(14);
+  doc.text('Raport flotă — Cursă cu Cursă', 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Perioadă: ${periodLabel(days)} · generat ${todayStr()}`, 14, 21);
+
+  doc.autoTable({
+    startY: 27,
+    head: [['Camion','Curse','Zile','Facturat','Combustibil','Taxă TollRo','Extra','Cost fix','Profit net']],
+    body: perTruck.map(({truck,s})=>[
+      truck.name, s.nrCurse, s.zileLucrate,
+      RON2(s.facturat), RON2(s.carburant), RON2(s.tollRo), RON2(s.extra), RON2(s.costFix), RON2(s.profitNet),
+    ]),
+    styles:{fontSize:8}, headStyles:{fillColor:[28,35,33]},
+  });
+
+  doc.addPage();
+  doc.setFontSize(14);
+  doc.text('Curse — detaliu', 14, 15);
+  doc.autoTable({
+    startY: 21,
+    head: [['Camion','Data','Traseu','Marfă','t','Facturat','Combustibil','TollRo','Extra','Marjă']],
+    body: tripRows.map(r=>[
+      r.camion, r.dataPlecare, `${r.plecare} → ${r.sosire}`, r.marfa, r.cantDesc,
+      RON2(r.facturat), RON2(r.combustibil), RON2(r.tollRo), RON2(r.extra), RON2(r.marja),
+    ]),
+    styles:{fontSize:7.5}, headStyles:{fillColor:[28,35,33]},
+  });
+
+  const blob = doc.output('blob');
+  try{
+    await downloads.save({filename:`raport_${todayStr()}.pdf`, data: blob});
+  }catch(err){
+    if(err && err.code!=='declined') alert('Exportul PDF a eșuat: '+(err&&err.message||'eroare necunoscută'));
+  }
+});
+
+(async ()=>{
+  const downloads = await getDownloadsCapability();
+  if(!downloads) document.getElementById('exportRow').classList.add('hide');
+})();
+
+load();
+renderAll();
+updateFixPreview();
+prefillContinuity();
+
+// Scroll-ul peste un câmp numeric nu trebuie să-i schimbe valoarea.
+// Soluție: dacă rotița e folosită peste un input numeric, lăsăm pagina
+// să facă scroll normal și scoatem focusul din câmp (fără alt efect).
+document.addEventListener('wheel', (e)=>{
+  const el = e.target;
+  if(el && el.tagName === 'INPUT' && el.type === 'number'){
+    el.blur();
+  }
+}, { passive: true });
+</script>
+</body>
+</html>
