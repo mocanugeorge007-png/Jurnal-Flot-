@@ -316,9 +316,36 @@ select#periodSel{width:auto;}
       </select>
     </div>
 
-    <div class="grid2" id="exportRow" style="margin-bottom:14px;">
-      <button type="button" id="exportExcelBtn" class="btn ghost small">⬇ Export Excel</button>
-      <button type="button" id="exportPdfBtn" class="btn ghost small">⬇ Export PDF</button>
+    <div class="card" id="exportCard">
+      <h3 style="margin:0 0 4px">📤 Export — foaie de parcurs + jurnal</h3>
+      <p style="font-size:12.5px;color:var(--steel);margin:0 0 10px">Alege perioada și camionul, apoi descarcă. Fișierul conține: Foaie de parcurs, Jurnal detaliat, Alimentări și Rezumat.</p>
+      <div class="grid2">
+        <div class="field">
+          <label for="exPeriod">Perioadă</label>
+          <select id="exPeriod">
+            <option value="week">Săptămâna aceasta</option>
+            <option value="lastweek">Săptămâna trecută</option>
+            <option value="today">Azi</option>
+            <option value="month">Luna aceasta</option>
+            <option value="lastmonth">Luna trecută</option>
+            <option value="custom">Interval ales…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="exTruck">Camion</label>
+          <select id="exTruck"></select>
+        </div>
+      </div>
+      <div class="grid2 hide" id="exCustomRow" style="margin-top:8px">
+        <div class="field"><label for="exFrom">De la</label><input type="date" id="exFrom"></div>
+        <div class="field"><label for="exTo">Până la</label><input type="date" id="exTo"></div>
+      </div>
+      <div id="exInfo" style="font-size:12.5px;color:var(--steel);margin:10px 0"></div>
+      <div class="grid2">
+        <button type="button" id="exportExcelBtn" class="btn primary small">⬇ Excel (.xlsx)</button>
+        <button type="button" id="exportPdfBtn" class="btn ghost small">⬇ PDF</button>
+      </div>
+      <div id="exMsg" style="font-size:12.5px;color:var(--steel);margin-top:8px"></div>
     </div>
 
     <div id="fleetSummary"></div>
@@ -1735,6 +1762,7 @@ function renderAll(){
   renderTripList();
   renderRefuelTruckChips();
   renderRefuelList();
+  renderExportTruckSel(); updateExportInfo();
 }
 
 document.getElementById('modalCloseBtn').addEventListener('click', closeViewModal);
@@ -1799,136 +1827,252 @@ document.getElementById('delTruckAndTripsBtn').addEventListener('click', ()=>{
 });
 
 // ---------- EXPORT (Excel / PDF) ----------
-async function getDownloadsCapability(){
+const pad = n => String(n).padStart(2,'0');
+const isoLocal = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const fmtRo = iso => iso ? iso.split('-').reverse().join('.') : '';
+const noDia = str => String(str==null?'':str).replace(/[ăâ]/g,'a').replace(/[ĂÂ]/g,'A').replace(/[îÎ]/g,m=>m==='î'?'i':'I').replace(/[șş]/g,'s').replace(/[ȘŞ]/g,'S').replace(/[țţ]/g,'t').replace(/[ȚŢ]/g,'T').replace(/→/g,'->').replace(/—/g,'-').replace(/−/g,'-');
+
+function exportRange(){
+  const sel = document.getElementById('exPeriod').value;
+  const now = new Date(); now.setHours(12,0,0,0);
+  let from, to;
+  if(sel==='today'){ from = to = new Date(now); }
+  else if(sel==='week' || sel==='lastweek'){
+    const dow = (now.getDay()+6)%7; // luni = 0
+    from = new Date(now); from.setDate(now.getDate()-dow-(sel==='lastweek'?7:0));
+    to = new Date(from); to.setDate(from.getDate()+6);
+  } else if(sel==='month'){
+    from = new Date(now.getFullYear(), now.getMonth(), 1, 12);
+    to = new Date(now.getFullYear(), now.getMonth()+1, 0, 12);
+  } else if(sel==='lastmonth'){
+    from = new Date(now.getFullYear(), now.getMonth()-1, 1, 12);
+    to = new Date(now.getFullYear(), now.getMonth(), 0, 12);
+  } else {
+    const f = document.getElementById('exFrom').value, t = document.getElementById('exTo').value;
+    return {from:f||'0000-00-00', to:t||'9999-99-99', custom:true};
+  }
+  return {from:isoLocal(from), to:isoLocal(to)};
+}
+
+function buildExportData(){
+  const {from,to} = exportRange();
+  const truckSel = document.getElementById('exTruck').value;
+  const okTruck = id => truckSel==='all' || id===truckSel;
+  const trips = state.trips.filter(t=>t.date>=from && t.date<=to && okTruck(t.truckId))
+    .slice().sort((a,b)=> (a.date+(a.timeStart||'')).localeCompare(b.date+(b.timeStart||'')));
+  const refuels = state.refuels.filter(r=>r.date>=from && r.date<=to && okTruck(r.truckId))
+    .slice().sort((a,b)=> (a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+  const trucks = state.trucks.filter(t=>okTruck(t.id));
+  const nameOf = id => (state.trucks.find(t=>t.id===id)||{}).name || '—';
+  const fmtDt = (d,t)=> d ? fmtRo(d)+(t?' '+t:'') : '';
+
+  const tripRows = trips.map(trip=>{
+    const truck = state.trucks.find(t=>t.id===trip.truckId);
+    const c = tripCalc(trip, truck);
+    const km = Math.max(0,(trip.kme||0)-(trip.kms||0));
+    const litri = Math.max(0,(trip.le||0)-(trip.ls||0));
+    const wh = waitHours(trip);
+    const diff = qtyDiffKg(trip);
+    return {
+      camion:nameOf(trip.truckId), dataPlecare:fmtDt(trip.date,trip.timeStart), dataSosire:fmtDt(trip.dateEnd||trip.date,trip.timeEnd),
+      livrare:fmtDt(trip.deliveredDate,trip.deliveredTime),
+      plecare:trip.from||'', sosire:trip.to||'', marfa:trip.marfa||'(gol)',
+      kms:trip.kms||0, kme:trip.kme||0, km, ls:trip.ls||0, le:trip.le||0, litri:+litri.toFixed(1),
+      consum: km>0&&litri>0 ? +(litri/km*100).toFixed(1) : '',
+      cantInc:trip.cantInc||0, cantDesc:trip.cant||0,
+      diffTxt: (trip.marfa && trip.cantInc>0 && trip.cant>0) ? (diff===0?'0':(diff>0?'−':'+')+Math.abs(diff)) : '',
+      tarif:trip.tarif||0, facturat:+c.facturat.toFixed(2), combustibil:+c.costCarburant.toFixed(2),
+      tollRo:+c.costTollRo.toFixed(2), extra:trip.extra||0, marja:+c.marja.toFixed(2),
+      asteptare: wh!==null ? +wh.toFixed(1) : '',
+    };
+  });
+  const refRows = refuels.map(r=>({
+    data:fmtDt(r.date,r.time), camion:nameOf(r.truckId), tip:r.tip==='adblue'?'AdBlue':'Carburant',
+    litri:r.cantitate||0, pret:r.pret>0?r.pret:'', valoare:r.pret>0?+(r.cantitate*r.pret).toFixed(2):'',
+    km:r.km||'', litriBord:r.litriBord||'',
+  }));
+  const perTruck = trucks.map(t=>{
+    const s = statsForTruck(t, trips);
+    const rf = refuelTotalsForTruck(t.id, refuels);
+    return {truck:t, s, rf};
+  }).filter(x=>x.s.nrCurse>0 || x.rf.litriCarburant>0 || x.rf.litriAdblue>0);
+  return {from,to,trips,refuels,tripRows,refRows,perTruck,truckSel};
+}
+
+function exportTitle(d){
+  const who = d.truckSel==='all' ? 'toată flota' : (state.trucks.find(t=>t.id===d.truckSel)||{}).name;
+  const per = (d.from==='0000-00-00'||d.to==='9999-99-99') ? 'interval deschis' : (d.from===d.to ? fmtRo(d.from) : fmtRo(d.from)+' – '+fmtRo(d.to));
+  return {who, per};
+}
+
+function updateExportInfo(){
+  const el = document.getElementById('exInfo'); if(!el) return;
+  const d = buildExportData(); const t = exportTitle(d);
+  el.textContent = `${t.per} · ${t.who} · ${d.trips.length} curse, ${d.refuels.length} alimentări`;
+}
+function renderExportTruckSel(){
+  const sel = document.getElementById('exTruck'); if(!sel) return;
+  const cur = sel.value || 'all';
+  sel.innerHTML = '<option value="all">Toată flota</option>' + state.trucks.map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  sel.value = [...sel.options].some(o=>o.value===cur) ? cur : 'all';
+}
+
+async function saveFileOut(blob, filename, mime){
+  const msg = document.getElementById('exMsg');
   try{
-    if(typeof claude==='undefined' || !claude.use) return null;
-    return await claude.use('downloads');
-  }catch(e){ return null; }
+    // 1) aplicația Android (APK): pod nativ -> salvează în Descărcări
+    if(window.AndroidBridge && AndroidBridge.saveFile){
+      const b64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(blob); });
+      AndroidBridge.saveFile(filename, mime, b64);
+      msg.textContent = '✓ Salvat în Descărcări: '+filename;
+      return;
+    }
+    // 2) în Claude: capabilitatea de download
+    let dl = null;
+    try{ if(typeof claude!=='undefined' && claude.use) dl = await claude.use('downloads'); }catch(e){}
+    if(dl){ await dl.save({filename, data: blob}); msg.textContent='✓ Gata: '+filename; return; }
+    // 3) browser obișnuit / PWA
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    msg.textContent = '✓ Descărcat: '+filename;
+  }catch(err){
+    if(err && err.code==='declined') return;
+    msg.textContent = '✗ Exportul a eșuat: '+(err&&err.message||'eroare necunoscută');
+  }
 }
 
-function periodLabel(days){
-  return days>=9999 ? 'tot istoricul' : `ultimele ${days} zile`;
-}
-
-function buildExportData(days){
-  const trips = periodTrips(days);
-  const perTruck = state.trucks.map(t=>({truck:t, s:statsForTruck(t, trips)}));
-  const tripRows = trips
-    .slice()
-    .sort((a,b)=> a.date.localeCompare(b.date))
-    .map(trip=>{
-      const truck = state.trucks.find(t=>t.id===trip.truckId);
-      const c = tripCalc(trip, truck);
-      const km = Math.max(0,(trip.kme||0)-(trip.kms||0));
-      const litri = Math.max(0,(trip.le||0)-(trip.ls||0));
-      const wh = waitHours(trip);
-      return {
-        camion: truck?truck.name:'—',
-        dataPlecare: trip.date, oraPlecare: trip.timeStart||'',
-        plecare: trip.from||'', dataSosire: trip.dateEnd||trip.date, oraSosire: trip.timeEnd||'',
-        sosire: trip.to||'', marfa: trip.marfa||'(gol)',
-        cantInc: trip.cantInc||0, cantDesc: trip.cant||0, diferentaKg: qtyDiffKg(trip),
-        km, litri: +litri.toFixed(1),
-        tarif: trip.tarif||0, facturat: +c.facturat.toFixed(2),
-        combustibil: +c.costCarburant.toFixed(2), tollRo: +c.costTollRo.toFixed(2),
-        extra: trip.extra||0, marja: +c.marja.toFixed(2),
-        livrare: (trip.deliveredDate&&trip.deliveredTime)?(trip.deliveredDate+' '+trip.deliveredTime):'',
-        asteptareH: wh!==null ? +wh.toFixed(1) : '',
-      };
-    });
-  return {trips, perTruck, tripRows};
+function exportFileBase(d){
+  const who = d.truckSel==='all' ? 'flota' : noDia((state.trucks.find(t=>t.id===d.truckSel)||{}).name||'camion').replace(/[^A-Za-z0-9]+/g,'-');
+  const per = d.from===d.to ? d.from : d.from+'_'+d.to;
+  return `jurnal_${who}_${per}`.replace(/[0_]{0}0000-00-00/,'inceput').replace('9999-99-99','azi');
 }
 
 document.getElementById('exportExcelBtn').addEventListener('click', async ()=>{
-  const downloads = await getDownloadsCapability();
-  if(!downloads){ alert('Exportul de fișiere nu e disponibil în acest mod de vizualizare a paginii.'); return; }
-  const days = +document.getElementById('periodSel').value;
-  const {perTruck, tripRows} = buildExportData(days);
+  const d = buildExportData(); const t = exportTitle(d);
+  if(d.trips.length===0 && d.refuels.length===0){ document.getElementById('exMsg').textContent='Nu există nicio cursă sau alimentare în perioada aleasă.'; return; }
 
-  const summaryAOA = [
-    ['Raport flotă — '+periodLabel(days)],
-    [],
-    ['Camion','Curse','Zile lucrate','Facturat','Combustibil','Taxă drum (TollRo)','Extra','Cost fix alocat','Profit net','Profit/km','Profit/tonă'],
-    ...perTruck.map(({truck,s})=>[
-      truck.name, s.nrCurse, s.zileLucrate,
-      +s.facturat.toFixed(2), +s.carburant.toFixed(2), +s.tollRo.toFixed(2), +s.extra.toFixed(2), +s.costFix.toFixed(2),
-      +s.profitNet.toFixed(2),
-      s.km>0?+(s.profitNet/s.km).toFixed(2):'', s.tone>0?+(s.profitNet/s.tone).toFixed(2):'',
-    ]),
+  const sum = (arr,k)=>arr.reduce((s,r)=>s+(+r[k]||0),0);
+  const R = d.tripRows;
+
+  // 1) Foaie de parcurs — simplă
+  const foaie = [
+    ['FOAIE DE PARCURS — '+t.who+' — '+t.per], [],
+    ['Camion','Plecare (data, ora)','De la','Sosire (data, ora)','La','Km start','Km final','Km parcurși','Marfă','Încărcat (t)','Descărcat (t)'],
+    ...R.map(r=>[r.camion,r.dataPlecare,r.plecare,r.dataSosire,r.sosire,r.kms||'',r.kme||'',r.km,r.marfa,r.cantInc||'',r.cantDesc||'']),
+    [], ['TOTAL','','','','','','',sum(R,'km'),'',sum(R,'cantInc'),sum(R,'cantDesc')],
+  ];
+  // 2) Jurnal — tot ce s-a înregistrat
+  const jurnal = [
+    ['JURNAL DETALIAT — '+t.who+' — '+t.per], [],
+    ['Camion','Plecare','De la','Sosire','La','Livrare efectuată','Marfă','Încărcat (t)','Descărcat (t)','Diferență livrare (kg)',
+     'Km parcurși','Litri consumați','Consum (L/100km)','Așteptare (h)','Tarif (RON/t)','Facturat','Combustibil','Taxă drum','Extra','Marjă'],
+    ...R.map(r=>[r.camion,r.dataPlecare,r.plecare,r.dataSosire,r.sosire,r.livrare,r.marfa,r.cantInc||'',r.cantDesc||'',r.diffTxt,
+      r.km,r.litri,r.consum,r.asteptare,r.tarif||'',r.facturat,r.combustibil,r.tollRo,r.extra||'',r.marja]),
+    [], ['TOTAL','','','','','','',sum(R,'cantInc'),sum(R,'cantDesc'),'',sum(R,'km'),+sum(R,'litri').toFixed(1),'','','',
+      +sum(R,'facturat').toFixed(2),+sum(R,'combustibil').toFixed(2),+sum(R,'tollRo').toFixed(2),sum(R,'extra'),+sum(R,'marja').toFixed(2)],
+  ];
+  // 3) Alimentări
+  const F = d.refRows;
+  const alim = [
+    ['ALIMENTĂRI — '+t.who+' — '+t.per], [],
+    ['Data, ora','Camion','Tip','Litri','Preț/L','Valoare (RON)','Km bord','Litri bord'],
+    ...F.map(r=>[r.data,r.camion,r.tip,r.litri,r.pret,r.valoare,r.km,r.litriBord]),
+    [], ['TOTAL','','',+sum(F,'litri').toFixed(1),'',+sum(F,'valoare').toFixed(2),'',''],
+  ];
+  // 4) Rezumat
+  const rez = [
+    ['REZUMAT — '+t.who+' — '+t.per], [],
+    ['Camion','Curse','Zile lucrate','Km parcurși','Facturat','Combustibil (calc.)','Taxă drum','Extra','Cost fix alocat','Profit net',
+     'Diferență livrare (kg)','Litri carburant alimentați','Cheltuit carburant','Litri AdBlue','Cheltuit AdBlue'],
+    ...d.perTruck.map(({truck,s,rf})=>[truck.name,s.nrCurse,s.zileLucrate,s.km,+s.facturat.toFixed(2),+s.carburant.toFixed(2),+s.tollRo.toFixed(2),
+      +s.extra.toFixed(2),+s.costFix.toFixed(2),+s.profitNet.toFixed(2),
+      s.diffKgTotal===0?0:(s.diffKgTotal>0?'−':'+')+Math.abs(s.diffKgTotal),
+      +rf.litriCarburant.toFixed(1),+rf.costCarburant.toFixed(2),+rf.litriAdblue.toFixed(1),+rf.costAdblue.toFixed(2)]),
   ];
 
-  const tripAOA = [
-    ['Camion','Data plecare','Ora plecare','Plecare','Data sosire','Ora sosire','Sosire','Marfă',
-     'Cant. încărcată (t)','Cant. descărcată (t)','Diferență (kg)','Km','Litri','Tarif/to','Facturat',
-     'Combustibil','Taxă drum TollRo','Extra','Marjă','Livrare efectuată','Așteptare (h)'],
-    ...tripRows.map(r=>[
-      r.camion, r.dataPlecare, r.oraPlecare, r.plecare, r.dataSosire, r.oraSosire, r.sosire, r.marfa,
-      r.cantInc, r.cantDesc, r.diferentaKg, r.km, r.litri, r.tarif, r.facturat,
-      r.combustibil, r.tollRo, r.extra, r.marja, r.livrare, r.asteptareH,
-    ]),
-  ];
-
+  const widths = rows => { const n=Math.max(...rows.map(r=>r.length)); const w=[];
+    for(let i=0;i<n;i++){ let m=8; rows.slice(2).forEach(r=>{ const l=String(r[i]==null?'':r[i]).length; if(l>m) m=l; }); w.push({wch:Math.min(m+2,32)}); } return w; };
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryAOA), 'Rezumat flotă');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tripAOA), 'Curse');
+  [[foaie,'Foaie de parcurs'],[jurnal,'Jurnal'],[alim,'Alimentări'],[rez,'Rezumat']].forEach(([rows,name])=>{
+    const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols']=widths(rows);
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  });
   const out = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-  const blob = new Blob([out], {type:'application/octet-stream'});
-
-  try{
-    await downloads.save({filename:`raport_${todayStr()}.xlsx`, data: blob});
-  }catch(err){
-    if(err && err.code!=='declined') alert('Exportul Excel a eșuat: '+(err&&err.message||'eroare necunoscută'));
-  }
+  await saveFileOut(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), exportFileBase(d)+'.xlsx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 });
 
 document.getElementById('exportPdfBtn').addEventListener('click', async ()=>{
-  const downloads = await getDownloadsCapability();
-  if(!downloads){ alert('Exportul de fișiere nu e disponibil în acest mod de vizualizare a paginii.'); return; }
-  const days = +document.getElementById('periodSel').value;
-  const {perTruck, tripRows} = buildExportData(days);
-
+  const d = buildExportData(); const t = exportTitle(d);
+  if(d.trips.length===0 && d.refuels.length===0){ document.getElementById('exMsg').textContent='Nu există nicio cursă sau alimentare în perioada aleasă.'; return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({orientation:'landscape'});
-  doc.setFontSize(14);
-  doc.text('Raport flotă — Cursă cu Cursă', 14, 15);
-  doc.setFontSize(10);
-  doc.text(`Perioadă: ${periodLabel(days)} · generat ${todayStr()}`, 14, 21);
+  const N = noDia, R = d.tripRows, F = d.refRows;
+  const sum = (arr,k)=>arr.reduce((s,r)=>s+(+r[k]||0),0);
+  const head = {fillColor:[47,111,237], textColor:255, fontSize:8};
+  const foot = {fillColor:[226,236,253], textColor:[25,36,51], fontStyle:'bold'};
+
+  doc.setFontSize(15); doc.text(N('Foaie de parcurs si jurnal'), 14, 14);
+  doc.setFontSize(10); doc.text(N(`${t.who} · ${t.per} · generat ${fmtRo(todayStr())}`), 14, 20);
 
   doc.autoTable({
-    startY: 27,
-    head: [['Camion','Curse','Zile','Facturat','Combustibil','Taxă TollRo','Extra','Cost fix','Profit net']],
-    body: perTruck.map(({truck,s})=>[
-      truck.name, s.nrCurse, s.zileLucrate,
-      RON2(s.facturat), RON2(s.carburant), RON2(s.tollRo), RON2(s.extra), RON2(s.costFix), RON2(s.profitNet),
-    ]),
-    styles:{fontSize:8}, headStyles:{fillColor:[28,35,33]},
+    startY: 25,
+    head:[['Camion','Plecare','De la','Sosire','La','Km start','Km final','Km','Marfa','Inc. (t)','Desc. (t)'].map(N)],
+    body: R.map(r=>[r.camion,r.dataPlecare,r.plecare,r.dataSosire,r.sosire,r.kms||'',r.kme||'',r.km,r.marfa,r.cantInc||'',r.cantDesc||''].map(N)),
+    foot:[['TOTAL','','','','','','',sum(R,'km'),'',sum(R,'cantInc'),sum(R,'cantDesc')]],
+    styles:{fontSize:7.5, cellPadding:1.6}, headStyles:head, footStyles:foot, showFoot:'lastPage',
+    alternateRowStyles:{fillColor:[245,248,253]},
   });
 
   doc.addPage();
-  doc.setFontSize(14);
-  doc.text('Curse — detaliu', 14, 15);
+  doc.setFontSize(13); doc.text(N('Jurnal detaliat'), 14, 14);
   doc.autoTable({
-    startY: 21,
-    head: [['Camion','Data','Traseu','Marfă','t','Facturat','Combustibil','TollRo','Extra','Marjă']],
-    body: tripRows.map(r=>[
-      r.camion, r.dataPlecare, `${r.plecare} → ${r.sosire}`, r.marfa, r.cantDesc,
-      RON2(r.facturat), RON2(r.combustibil), RON2(r.tollRo), RON2(r.extra), RON2(r.marja),
-    ]),
-    styles:{fontSize:7.5}, headStyles:{fillColor:[28,35,33]},
+    startY: 19,
+    head:[['Camion','Plecare','Sosire','Livrare','Traseu','Marfa','Inc/Desc (t)','Dif. kg','Km','Litri','L/100','Asteptare h','Facturat','Combust.','Taxa','Extra','Marja'].map(N)],
+    body: R.map(r=>[r.camion,r.dataPlecare,r.dataSosire,r.livrare,`${r.plecare} -> ${r.sosire}`,r.marfa,
+      (r.cantInc||r.cantDesc)?`${r.cantInc}/${r.cantDesc}`:'',r.diffTxt,r.km,r.litri,r.consum,r.asteptare,
+      RON2(r.facturat),RON2(r.combustibil),RON2(r.tollRo),r.extra?RON2(r.extra):'',RON2(r.marja)].map(N)),
+    foot:[['TOTAL','','','','','','','',sum(R,'km'),+sum(R,'litri').toFixed(1),'','',RON2(sum(R,'facturat')),RON2(sum(R,'combustibil')),RON2(sum(R,'tollRo')),RON2(sum(R,'extra')),RON2(sum(R,'marja'))]],
+    styles:{fontSize:6.5, cellPadding:1.3}, headStyles:{...head,fontSize:6.5}, footStyles:foot, showFoot:'lastPage',
+    alternateRowStyles:{fillColor:[245,248,253]},
+    columnStyles:{4:{cellWidth:34}},
   });
 
-  const blob = doc.output('blob');
-  try{
-    await downloads.save({filename:`raport_${todayStr()}.pdf`, data: blob});
-  }catch(err){
-    if(err && err.code!=='declined') alert('Exportul PDF a eșuat: '+(err&&err.message||'eroare necunoscută'));
+  if(F.length){
+    doc.addPage();
+    doc.setFontSize(13); doc.text(N('Alimentari'), 14, 14);
+    doc.autoTable({
+      startY: 19,
+      head:[['Data, ora','Camion','Tip','Litri','Pret/L','Valoare (RON)','Km bord','Litri bord'].map(N)],
+      body: F.map(r=>[r.data,r.camion,r.tip,r.litri,r.pret===''?'':RON2(r.pret),r.valoare===''?'':RON2(r.valoare),r.km,r.litriBord].map(N)),
+      foot:[['TOTAL','','',+sum(F,'litri').toFixed(1),'',RON2(sum(F,'valoare')),'','']],
+      styles:{fontSize:8, cellPadding:1.6}, headStyles:head, footStyles:foot, showFoot:'lastPage',
+      alternateRowStyles:{fillColor:[245,248,253]},
+    });
   }
+
+  doc.addPage();
+  doc.setFontSize(13); doc.text(N('Rezumat pe camion'), 14, 14);
+  doc.autoTable({
+    startY: 19,
+    head:[['Camion','Curse','Zile','Km','Facturat','Combustibil','Taxa drum','Extra','Cost fix','Profit net','Dif. livrare kg','L carburant','Cheltuit carb.'].map(N)],
+    body: d.perTruck.map(({truck,s,rf})=>[truck.name,s.nrCurse,s.zileLucrate,s.km,RON2(s.facturat),RON2(s.carburant),RON2(s.tollRo),RON2(s.extra),RON2(s.costFix),RON2(s.profitNet),
+      s.diffKgTotal===0?'0':(s.diffKgTotal>0?'-':'+')+Math.abs(s.diffKgTotal),+rf.litriCarburant.toFixed(1),RON2(rf.costCarburant)].map(N)),
+    styles:{fontSize:8, cellPadding:1.6}, headStyles:head,
+  });
+
+  const pages = doc.getNumberOfPages();
+  for(let i=1;i<=pages;i++){ doc.setPage(i); doc.setFontSize(8); doc.setTextColor(120); doc.text(`Cursa cu Cursa · pagina ${i}/${pages}`, 14, 203); }
+  await saveFileOut(doc.output('blob'), exportFileBase(d)+'.pdf', 'application/pdf');
 });
 
-(async ()=>{
-  const downloads = await getDownloadsCapability();
-  if(!downloads) document.getElementById('exportRow').classList.add('hide');
-})();
+['exPeriod','exTruck','exFrom','exTo'].forEach(id=>document.getElementById(id).addEventListener('change', ()=>{
+  document.getElementById('exCustomRow').classList.toggle('hide', document.getElementById('exPeriod').value!=='custom');
+  document.getElementById('exMsg').textContent='';
+  updateExportInfo();
+}));
 
 load();
 renderAll();
